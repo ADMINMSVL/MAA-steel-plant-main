@@ -1,16 +1,28 @@
-import { Text, View, StyleSheet, Image } from "react-native";
-
-const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Index() {
-  console.log(EXPO_PUBLIC_BACKEND_URL, "EXPO_PUBLIC_BACKEND_URL");
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    // Delay to show splash
+    setTimeout(() => {
+      if (isAuthenticated) {
+        router.replace('/(tabs)');
+      } else {
+        router.replace('/auth/login');
+      }
+    }, 1000);
+  }, [isAuthenticated]);
 
   return (
     <View style={styles.container}>
-      <Image
-        source={require("../assets/images/app-image.png")}
-        style={styles.image}
-      />
+      <Text style={styles.title}>🏭 Steel Plant</Text>
+      <Text style={styles.subtitle}>Gate-to-Gate Management</Text>
+      <ActivityIndicator size="large" color="#1e88e5" style={styles.loader} />
     </View>
   );
 }
@@ -18,13 +30,22 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0c0c0c",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: '#0d47a1',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  image: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "contain",
+  title: {
+    fontSize: 42,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 18,
+    color: '#bbdefb',
+    marginBottom: 32,
+  },
+  loader: {
+    marginTop: 16,
   },
 });
