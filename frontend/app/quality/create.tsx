@@ -211,6 +211,20 @@ export default function CreateQualityCheck() {
                 {String.fromCharCode(97 + index).toUpperCase()}
               </Text>
             </View>
+            
+            {/* Product Name field for "Others" category */}
+            {index === 7 && (
+              <View style={styles.productNameContainer}>
+                <Text style={styles.inputLabel}>Product Name (e.g., Turning, Sponge Iron)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter product name"
+                  value={cat.state.product_name}
+                  onChangeText={(text) => cat.setState({ ...cat.state, product_name: text })}
+                />
+              </View>
+            )}
+
             <View style={styles.inputRow}>
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Weight (kg)</Text>
