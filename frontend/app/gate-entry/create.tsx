@@ -23,9 +23,26 @@ export default function CreateGateEntry() {
   const [materialType, setMaterialType] = useState('');
   const [supplier, setSupplier] = useState('');
   const [partyWeight, setPartyWeight] = useState('');
+  const [purchaseOrders, setPurchaseOrders] = useState([]);
+  const [selectedPO, setSelectedPO] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
   const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+
+  useEffect(() => {
+    fetchPurchaseOrders();
+  }, []);
+
+  const fetchPurchaseOrders = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/purchase-order`);
+      const data = await response.json();
+      const pendingPOs = data.filter((po: any) => po.status === 'pending');
+      setPurchaseOrders(pendingPOs);
+    } catch (error) {
+      console.error('Error fetching purchase orders:', error);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!vehicleNumber || !driverName || !driverPhone || !materialType || !supplier) {
