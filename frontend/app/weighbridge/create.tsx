@@ -200,7 +200,7 @@ export default function CreateWeighbridge() {
           </View>
         )}
 
-        <Text style={[styles.label, { marginTop: 24 }]}>Weight Capture</Text>
+        <Text style={[styles.label, { marginTop: 24 }]}>Weighbridge Photo (Documentation)</Text>
         
         {image ? (
           <View style={styles.imageContainer}>
