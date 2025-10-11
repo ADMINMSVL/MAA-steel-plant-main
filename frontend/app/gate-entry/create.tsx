@@ -44,6 +44,7 @@ export default function CreateGateEntry() {
           driver_phone: driverPhone,
           material_type: materialType,
           supplier: supplier,
+          party_weight: partyWeight ? parseFloat(partyWeight) : null,
           operator_id: user?.id || '',
         }),
       });
