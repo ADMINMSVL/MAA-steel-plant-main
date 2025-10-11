@@ -38,10 +38,13 @@ export default function Login() {
     }
 
     try {
+      console.log('Attempting login for:', username);
       await login(username, pin);
+      console.log('Login successful, navigating to tabs');
       router.replace('/(tabs)');
     } catch (error: any) {
-      Alert.alert('Login Failed', error.message || 'Invalid credentials');
+      console.error('Login error details:', error);
+      Alert.alert('Login Failed', error.message || 'Invalid credentials. Please check your username and PIN.');
     }
   };
 
