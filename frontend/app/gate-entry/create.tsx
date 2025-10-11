@@ -143,6 +143,45 @@ export default function CreateGateEntry() {
             onChangeText={setMaterialType}
           />
 
+          <Text style={styles.label}>Link Purchase Order (Optional)</Text>
+          {purchaseOrders.length > 0 ? (
+            <View style={styles.poContainer}>
+              {purchaseOrders.map((po: any) => (
+                <TouchableOpacity
+                  key={po._id}
+                  style={[
+                    styles.poCard,
+                    selectedPO?._id === po._id && styles.poCardSelected,
+                  ]}
+                  onPress={() => setSelectedPO(po)}
+                >
+                  <View style={styles.poCardContent}>
+                    <Text style={styles.poNumber}>PO: {po.po_number}</Text>
+                    <Text style={styles.poMaterial}>{po.material_type}</Text>
+                    <Text style={styles.poRate}>Rate: ₹{po.rate}/kg</Text>
+                  </View>
+                  {selectedPO?._id === po._id && (
+                    <Ionicons name="checkmark-circle" size={24} color="#4caf50" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.noPOCard}>
+              <Ionicons name="information-circle" size={24} color="#9e9e9e" />
+              <Text style={styles.noPOText}>No pending purchase orders</Text>
+            </View>
+          )}
+
+          {selectedPO && (
+            <View style={styles.rateInfoCard}>
+              <Ionicons name="pricetag" size={24} color="#4caf50" />
+              <Text style={styles.rateInfoText}>
+                Rate will be ₹{selectedPO.rate}/kg from PO
+              </Text>
+            </View>
+          )}
+
           <Text style={styles.label}>Supplier *</Text>
           <TextInput
             style={styles.input}
