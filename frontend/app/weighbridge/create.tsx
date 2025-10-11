@@ -20,7 +20,6 @@ export default function CreateWeighbridge() {
   const { user } = useAuth();
   const [gateEntries, setGateEntries] = useState([]);
   const [selectedEntry, setSelectedEntry] = useState<any>(null);
-  const [image, setImage] = useState<string | null>(null);
   const [weight1, setWeight1] = useState('');
   const [weight2, setWeight2] = useState('');
   const [weight3, setWeight3] = useState('');
@@ -35,7 +34,6 @@ export default function CreateWeighbridge() {
 
   useEffect(() => {
     fetchGateEntries();
-    requestPermissions();
   }, []);
 
   useEffect(() => {
