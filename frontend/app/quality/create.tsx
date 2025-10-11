@@ -457,6 +457,9 @@ const styles = StyleSheet.create({
   inputContainer: {
     flex: 1,
   },
+  productNameContainer: {
+    marginBottom: 12,
+  },
   inputLabel: {
     fontSize: 14,
     color: '#546e7a',
