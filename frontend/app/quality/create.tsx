@@ -296,7 +296,8 @@ export default function CreateQualityCheck() {
             )}
 
             {productEntries.map((entry, index) => (
-              <View key={entry.id} style={styles.productCard}>
+              <React.Fragment key={entry.id}>
+              <View style={styles.productCard}>
                 <View style={styles.productCardHeader}>
                   <Text style={styles.productCardTitle}>Product #{index + 1}</Text>
                   <TouchableOpacity onPress={() => removeProductEntry(entry.id)}>
