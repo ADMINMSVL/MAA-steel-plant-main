@@ -137,8 +137,8 @@ export default function CreateWeighbridge() {
       const data = await response.json();
       
       Alert.alert(
-        'Success',
-        `Weighbridge entry created!\nNet Weight: ${data.net_weight || 'N/A'} kg`,
+        'Success!',
+        `Weighbridge entry created successfully!\n\nNet Weight: ${data.net_weight || 'N/A'} kg${data.rate ? `\nRate: ₹${data.rate}/kg` : ''}`,
         [
           {
             text: 'Done',
