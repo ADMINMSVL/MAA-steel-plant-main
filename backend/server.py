@@ -61,6 +61,7 @@ class GateEntry(BaseModel):
     driver_phone: str
     material_type: str
     supplier: str
+    party_weight: Optional[float] = None
     entry_date: datetime = Field(default_factory=datetime.utcnow)
     operator_id: str
     status: str = "entered"  # entered, weighed, inspected, completed
@@ -71,6 +72,7 @@ class GateEntryCreate(BaseModel):
     driver_phone: str
     material_type: str
     supplier: str
+    party_weight: Optional[float] = None
     operator_id: str
 
 class Weighbridge(BaseModel):
