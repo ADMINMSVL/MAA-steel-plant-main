@@ -288,6 +288,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  orderHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   poNumber: {
     fontSize: 20,
     fontWeight: 'bold',
