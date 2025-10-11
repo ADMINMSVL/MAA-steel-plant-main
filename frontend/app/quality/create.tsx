@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 interface CategoryData {
   weight: string;
   rate: string;
+  product_name?: string;
 }
 
 export default function CreateQualityCheck() {
