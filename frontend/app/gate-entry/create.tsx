@@ -22,6 +22,7 @@ export default function CreateGateEntry() {
   const [driverPhone, setDriverPhone] = useState('');
   const [materialType, setMaterialType] = useState('');
   const [supplier, setSupplier] = useState('');
+  const [partyWeight, setPartyWeight] = useState('');
   const [loading, setLoading] = useState(false);
 
   const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
