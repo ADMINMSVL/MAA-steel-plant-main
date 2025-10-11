@@ -15,10 +15,14 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 
-interface CategoryData {
+interface ProductEntry {
+  id: string;
+  category: string;
+  categoryName: string;
+  productName: string;
   weight: string;
+  dust: string;
   rate: string;
-  product_name?: string;
 }
 
 export default function CreateQualityCheck() {
@@ -31,28 +35,24 @@ export default function CreateQualityCheck() {
   const [status, setStatus] = useState('approved');
   const [remarks, setRemarks] = useState('');
   const [unloadingBay, setUnloadingBay] = useState('');
-
-  const [colourTin, setColourTin] = useState<CategoryData>({ weight: '', rate: '' });
-  const [tin, setTin] = useState<CategoryData>({ weight: '', rate: '' });
-  const [light, setLight] = useState<CategoryData>({ weight: '', rate: '' });
-  const [kabadi, setKabadi] = useState<CategoryData>({ weight: '', rate: '' });
-  const [selected, setSelected] = useState<CategoryData>({ weight: '', rate: '' });
-  const [p2p, setP2p] = useState<CategoryData>({ weight: '', rate: '' });
-  const [millHeavy, setMillHeavy] = useState<CategoryData>({ weight: '', rate: '' });
-  const [others, setOthers] = useState<CategoryData>({ weight: '', rate: '', product_name: '' });
+  const [p2pBasePrice, setP2pBasePrice] = useState('');
+  
+  // Dynamic product entries
+  const [productEntries, setProductEntries] = useState<ProductEntry[]>([]);
 
   const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
-  const categories = [
-    { name: 'Colour Tin', key: 'colour_tin', state: colourTin, setState: setColourTin, color: '#e91e63' },
-    { name: 'Tin', key: 'tin', state: tin, setState: setTin, color: '#9c27b0' },
-    { name: 'Light', key: 'light', state: light, setState: setLight, color: '#2196f3' },
-    { name: 'Kabadi', key: 'kabadi', state: kabadi, setState: setKabadi, color: '#00bcd4' },
-    { name: 'Selected', key: 'selected', state: selected, setState: setSelected, color: '#4caf50' },
-    { name: 'P2P', key: 'p2p', state: p2p, setState: setP2p, color: '#ff9800' },
-    { name: 'Mill Heavy', key: 'mill_heavy', state: millHeavy, setState: setMillHeavy, color: '#795548' },
-    { name: 'Others', key: 'others', state: others, setState: setOthers, color: '#607d8b' },
-  ];
+  // Price differences based on P2P
+  const priceConfig: Record<string, { name: string; difference: number; color: string }> = {
+    colour_tin: { name: 'Colour Tin', difference: -12500, color: '#e91e63' },
+    tin: { name: 'Tin', difference: -7000, color: '#9c27b0' },
+    light: { name: 'Light', difference: -6000, color: '#2196f3' },
+    kabadi: { name: 'Kabadi', difference: -2500, color: '#00bcd4' },
+    selected: { name: 'Selected', difference: -1000, color: '#4caf50' },
+    p2p: { name: 'P2P', difference: 0, color: '#ff9800' },
+    mill_heavy: { name: 'Mill Heavy', difference: 1000, color: '#795548' },
+    others: { name: 'Others', difference: 0, color: '#607d8b' },
+  };
 
   useEffect(() => {
     fetchGateEntries();
@@ -71,18 +71,73 @@ export default function CreateQualityCheck() {
     }
   };
 
+  const calculateRate = (category: string) => {
+    const basePrice = parseFloat(p2pBasePrice) || 0;
+    if (basePrice === 0) return '';
+    return (basePrice + priceConfig[category].difference).toString();
+  };
+
+  const addProductEntry = () => {
+    const newEntry: ProductEntry = {
+      id: Date.now().toString(),
+      category: 'colour_tin',
+      categoryName: 'Colour Tin',
+      productName: '',
+      weight: '',
+      dust: '',
+      rate: calculateRate('colour_tin'),
+    };
+    setProductEntries([...productEntries, newEntry]);
+  };
+
+  const updateProductEntry = (id: string, field: string, value: string) => {
+    setProductEntries(prev =>
+      prev.map(entry => {
+        if (entry.id === id) {
+          const updated = { ...entry, [field]: value };
+          // Update rate when category changes
+          if (field === 'category') {
+            updated.rate = calculateRate(value);
+            updated.categoryName = priceConfig[value].name;
+          }
+          return updated;
+        }
+        return entry;
+      })
+    );
+  };
+
+  const removeProductEntry = (id: string) => {
+    setProductEntries(prev => prev.filter(entry => entry.id !== id));
+  };
+
+  // Auto-update all rates when P2P base price changes
+  useEffect(() => {
+    if (p2pBasePrice) {
+      setProductEntries(prev =>
+        prev.map(entry => ({
+          ...entry,
+          rate: calculateRate(entry.category),
+        }))
+      );
+    }
+  }, [p2pBasePrice]);
+
   const calculateTotals = () => {
     let totalWeight = 0;
+    let totalDust = 0;
     let totalAmount = 0;
 
-    categories.forEach(cat => {
-      const weight = parseFloat(cat.state.weight) || 0;
-      const rate = parseFloat(cat.state.rate) || 0;
+    productEntries.forEach(entry => {
+      const weight = parseFloat(entry.weight) || 0;
+      const dust = parseFloat(entry.dust) || 0;
+      const rate = parseFloat(entry.rate) || 0;
       totalWeight += weight;
+      totalDust += dust;
       totalAmount += (weight * rate);
     });
 
-    return { totalWeight, totalAmount };
+    return { totalWeight, totalDust, totalAmount };
   };
 
   const handleSubmit = async () => {
@@ -91,32 +146,37 @@ export default function CreateQualityCheck() {
       return;
     }
 
-    const { totalWeight, totalAmount } = calculateTotals();
-
-    if (totalWeight === 0) {
-      Alert.alert('Error', 'Please enter at least one quality category with weight');
+    if (productEntries.length === 0) {
+      Alert.alert('Error', 'Please add at least one product entry');
       return;
     }
 
     setLoading(true);
     try {
+      // Group entries by category
+      const groupedData: any = {};
+      
+      productEntries.forEach(entry => {
+        if (!groupedData[entry.category]) {
+          groupedData[entry.category] = {
+            weight: 0,
+            rate: parseFloat(entry.rate) || 0,
+            dust: 0,
+            product_name: entry.category === 'others' ? entry.productName : null,
+          };
+        }
+        groupedData[entry.category].weight += parseFloat(entry.weight) || 0;
+        groupedData[entry.category].dust += parseFloat(entry.dust) || 0;
+      });
+
       const qualityData: any = {
         gate_entry_id: selectedEntry._id,
         status,
         remarks,
         unloading_bay: unloadingBay,
         inspector_id: user?.id || '',
+        ...groupedData,
       };
-
-      categories.forEach(cat => {
-        if (cat.state.weight || cat.state.rate) {
-          qualityData[cat.key] = {
-            weight: parseFloat(cat.state.weight) || null,
-            rate: parseFloat(cat.state.rate) || null,
-            product_name: cat.state.product_name || null,
-          };
-        }
-      });
 
       const response = await fetch(`${BACKEND_URL}/api/quality-inspection`, {
         method: 'POST',
@@ -129,10 +189,11 @@ export default function CreateQualityCheck() {
       }
 
       const data = await response.json();
+      const { totalWeight, totalDust, totalAmount } = calculateTotals();
       
       Alert.alert(
         'Success',
-        `Quality inspection completed!\nTotal Weight: ${data.total_weight} kg\nTotal Amount: ₹${data.total_amount.toFixed(2)}`,
+        `Quality inspection completed!\nTotal Weight: ${totalWeight} kg\nTotal Dust: ${totalDust} kg\nTotal Amount: ₹${totalAmount.toFixed(2)}`,
         [
           {
             text: 'Done',
@@ -147,7 +208,7 @@ export default function CreateQualityCheck() {
     }
   };
 
-  const { totalWeight, totalAmount } = calculateTotals();
+  const { totalWeight, totalDust, totalAmount } = calculateTotals();
 
   if (loadingEntries) {
     return (
@@ -163,175 +224,251 @@ export default function CreateQualityCheck() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#ffffff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Quality Check</Text>
-      </View>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#ffffff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Quality Check</Text>
+        </View>
 
-      <View style={styles.form}>
-        <Text style={styles.label}>Select Weighed Entry *</Text>
-        {gateEntries.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Ionicons name="information-circle" size={32} color="#9e9e9e" />
-            <Text style={styles.emptyText}>No weighed entries available</Text>
+        <View style={styles.form}>
+          <Text style={styles.label}>Select Weighed Entry *</Text>
+          {gateEntries.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <Ionicons name="information-circle" size={32} color="#9e9e9e" />
+              <Text style={styles.emptyText}>No weighed entries available</Text>
+            </View>
+          ) : (
+            <View style={styles.entriesContainer}>
+              {gateEntries.map((entry: any) => (
+                <TouchableOpacity
+                  key={entry._id}
+                  style={[
+                    styles.entryCard,
+                    selectedEntry?._id === entry._id && styles.entryCardSelected,
+                  ]}
+                  onPress={() => setSelectedEntry(entry)}
+                >
+                  <View style={styles.entryCardLeft}>
+                    <Text style={styles.vehicleText}>{entry.vehicle_number}</Text>
+                    <Text style={styles.materialText}>{entry.material_type}</Text>
+                  </View>
+                  {selectedEntry?._id === entry._id && (
+                    <Ionicons name="checkmark-circle" size={24} color="#9c27b0" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* P2P Base Price */}
+          <View style={styles.basePriceCard}>
+            <Ionicons name="cash" size={32} color="#ff9800" />
+            <View style={styles.basePriceContent}>
+              <Text style={styles.basePriceLabel}>P2P Base Price (₹/kg) *</Text>
+              <TextInput
+                style={styles.basePriceInput}
+                placeholder="Enter P2P base price"
+                value={p2pBasePrice}
+                onChangeText={setP2pBasePrice}
+                keyboardType="numeric"
+              />
+              <Text style={styles.basePriceHint}>All other prices will auto-calculate</Text>
+            </View>
           </View>
-        ) : (
-          <View style={styles.entriesContainer}>
-            {gateEntries.map((entry: any) => (
-              <TouchableOpacity
-                key={entry._id}
-                style={[
-                  styles.entryCard,
-                  selectedEntry?._id === entry._id && styles.entryCardSelected,
-                ]}
-                onPress={() => setSelectedEntry(entry)}
+
+          {/* Product Entries */}
+          <View style={styles.productsSection}>
+            <View style={styles.productsSectionHeader}>
+              <Text style={styles.sectionTitle}>Products & Qualities</Text>
+              <TouchableOpacity 
+                style={styles.addButton}
+                onPress={addProductEntry}
+                disabled={!p2pBasePrice}
               >
-                <View style={styles.entryCardLeft}>
-                  <Text style={styles.vehicleText}>{entry.vehicle_number}</Text>
-                  <Text style={styles.materialText}>{entry.material_type}</Text>
+                <Ionicons name="add-circle" size={32} color={p2pBasePrice ? "#4caf50" : "#cccccc"} />
+              </TouchableOpacity>
+            </View>
+            
+            {!p2pBasePrice && (
+              <Text style={styles.hintText}>Enter P2P base price first to add products</Text>
+            )}
+
+            {productEntries.map((entry, index) => (
+              <View key={entry.id} style={styles.productCard}>
+                <View style={styles.productCardHeader}>
+                  <Text style={styles.productCardTitle}>Product #{index + 1}</Text>
+                  <TouchableOpacity onPress={() => removeProductEntry(entry.id)}>
+                    <Ionicons name="trash" size={24} color="#f44336" />
+                  </TouchableOpacity>
                 </View>
-                {selectedEntry?._id === entry._id && (
-                  <Ionicons name="checkmark-circle" size={24} color="#9c27b0" />
+
+                {/* Category Selector */}
+                <Text style={styles.inputLabel}>Category *</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+                  {Object.entries(priceConfig).map(([key, config]) => (
+                    <TouchableOpacity
+                      key={key}
+                      style={[
+                        styles.categoryChip,
+                        { borderColor: config.color },
+                        entry.category === key && { backgroundColor: config.color },
+                      ]}
+                      onPress={() => updateProductEntry(entry.id, 'category', key)}
+                    >
+                      <Text
+                        style={[
+                          styles.categoryChipText,
+                          entry.category === key && styles.categoryChipTextActive,
+                        ]}
+                      >
+                        {config.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
+                {/* Product Name for Others */}
+                {entry.category === 'others' && (
+                  <View style={styles.fieldContainer}>
+                    <Text style={styles.inputLabel}>Product Name *</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g., Turning, Sponge Iron"
+                      value={entry.productName}
+                      onChangeText={(text) => updateProductEntry(entry.id, 'productName', text)}
+                    />
+                  </View>
                 )}
+
+                {/* Weight and Dust */}
+                <View style={styles.inputRow}>
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.inputLabel}>Weight (kg) *</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="0"
+                      value={entry.weight}
+                      onChangeText={(text) => updateProductEntry(entry.id, 'weight', text)}
+                      keyboardType="numeric"
+                    />
+                  </View>
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.inputLabel}>Dust (kg)</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="0"
+                      value={entry.dust}
+                      onChangeText={(text) => updateProductEntry(entry.id, 'dust', text)}
+                      keyboardType="numeric"
+                    />
+                  </View>
+                </View>
+
+                {/* Rate (Auto-calculated) */}
+                <View style={styles.rateCard}>
+                  <Text style={styles.rateLabel}>Rate (₹/kg)</Text>
+                  <Text style={styles.rateValue}>₹{entry.rate || '0'}</Text>
+                  {entry.category !== 'p2p' && entry.category !== 'others' && (
+                    <Text style={styles.rateDiff}>
+                      ({priceConfig[entry.category].difference > 0 ? '+' : ''}{priceConfig[entry.category].difference})
+                    </Text>
+                  )}
+                </View>
+
+                {/* Amount */}
+                {entry.weight && entry.rate && (
+                  <View style={styles.amountRow}>
+                    <Text style={styles.amountLabel}>Amount:</Text>
+                    <Text style={styles.amountValue}>
+                      ₹{(parseFloat(entry.weight) * parseFloat(entry.rate)).toFixed(2)}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            ))}
+          </View>
+
+          {/* Totals */}
+          {totalWeight > 0 && (
+            <View style={styles.totalsCard}>
+              <Ionicons name="calculator" size={32} color="#4caf50" />
+              <View style={styles.totalsContent}>
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Total Weight:</Text>
+                  <Text style={styles.totalValue}>{totalWeight.toFixed(2)} kg</Text>
+                </View>
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Total Dust:</Text>
+                  <Text style={styles.totalValue}>{totalDust.toFixed(2)} kg</Text>
+                </View>
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Total Amount:</Text>
+                  <Text style={styles.totalValue}>₹{totalAmount.toFixed(2)}</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Inspection Details */}
+          <Text style={[styles.sectionTitle, { marginTop: 32 }]}>Inspection Details</Text>
+          
+          <Text style={styles.label}>Status *</Text>
+          <View style={styles.statusContainer}>
+            {['approved', 'conditional', 'rejected'].map((s) => (
+              <TouchableOpacity
+                key={s}
+                style={[
+                  styles.statusButton,
+                  status === s && styles.statusButtonActive,
+                  status === s && s === 'approved' && { backgroundColor: '#4caf50' },
+                  status === s && s === 'conditional' && { backgroundColor: '#ff9800' },
+                  status === s && s === 'rejected' && { backgroundColor: '#f44336' },
+                ]}
+                onPress={() => setStatus(s)}
+              >
+                <Text
+                  style={[
+                    styles.statusButtonText,
+                    status === s && styles.statusButtonTextActive,
+                  ]}
+                >
+                  {s.toUpperCase()}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
-        )}
 
-        <Text style={[styles.sectionTitle, { marginTop: 32 }]}>Quality Bifurcation</Text>
-        <Text style={styles.subtitle}>Enter weight (kg) and rate (₹/kg) for each category</Text>
+          <Text style={styles.label}>Unloading Bay</Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Enter unloading bay"
+            value={unloadingBay}
+            onChangeText={setUnloadingBay}
+          />
 
-        {categories.map((cat, index) => (
-          <View key={index} style={[styles.categoryCard, { borderLeftColor: cat.color }]}>
-            <View style={styles.categoryHeader}>
-              <Text style={styles.categoryName}>{cat.name}</Text>
-              <Text style={[styles.categoryLetter, { color: cat.color }]}>
-                {String.fromCharCode(97 + index).toUpperCase()}
-              </Text>
-            </View>
-            
-            {/* Product Name field for "Others" category */}
-            {index === 7 && (
-              <View style={styles.productNameContainer}>
-                <Text style={styles.inputLabel}>Product Name (e.g., Turning, Sponge Iron)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter product name"
-                  value={cat.state.product_name}
-                  onChangeText={(text) => cat.setState({ ...cat.state, product_name: text })}
-                />
-              </View>
-            )}
+          <Text style={styles.label}>Remarks</Text>
+          <TextInput
+            style={[styles.textInput, styles.textArea]}
+            placeholder="Enter remarks (optional)"
+            value={remarks}
+            onChangeText={setRemarks}
+            multiline
+            numberOfLines={4}
+          />
 
-            <View style={styles.inputRow}>
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Weight (kg)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="0"
-                  value={cat.state.weight}
-                  onChangeText={(text) => cat.setState({ ...cat.state, weight: text })}
-                  keyboardType="numeric"
-                />
-              </View>
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Rate (₹/kg)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="0"
-                  value={cat.state.rate}
-                  onChangeText={(text) => cat.setState({ ...cat.state, rate: text })}
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
-            {cat.state.weight && cat.state.rate && (
-              <View style={styles.amountRow}>
-                <Text style={styles.amountLabel}>Amount:</Text>
-                <Text style={styles.amountValue}>
-                  ₹{(parseFloat(cat.state.weight) * parseFloat(cat.state.rate)).toFixed(2)}
-                </Text>
-              </View>
-            )}
-          </View>
-        ))}
-
-        {totalWeight > 0 && (
-          <View style={styles.totalsCard}>
-            <Ionicons name="calculator" size={32} color="#4caf50" />
-            <View style={styles.totalsContent}>
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Total Weight:</Text>
-                <Text style={styles.totalValue}>{totalWeight.toFixed(2)} kg</Text>
-              </View>
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Total Amount:</Text>
-                <Text style={styles.totalValue}>₹{totalAmount.toFixed(2)}</Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        <Text style={[styles.sectionTitle, { marginTop: 32 }]}>Inspection Details</Text>
-        
-        <Text style={styles.label}>Status *</Text>
-        <View style={styles.statusContainer}>
-          {['approved', 'conditional', 'rejected'].map((s) => (
-            <TouchableOpacity
-              key={s}
-              style={[
-                styles.statusButton,
-                status === s && styles.statusButtonActive,
-                status === s && s === 'approved' && { backgroundColor: '#4caf50' },
-                status === s && s === 'conditional' && { backgroundColor: '#ff9800' },
-                status === s && s === 'rejected' && { backgroundColor: '#f44336' },
-              ]}
-              onPress={() => setStatus(s)}
-            >
-              <Text
-                style={[
-                  styles.statusButtonText,
-                  status === s && styles.statusButtonTextActive,
-                ]}
-              >
-                {s.toUpperCase()}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          <TouchableOpacity
+            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={loading || !selectedEntry || productEntries.length === 0}
+          >
+            <Ionicons name="checkmark-circle" size={24} color="#ffffff" />
+            <Text style={styles.submitButtonText}>
+              {loading ? 'Submitting...' : 'Submit Quality Check'}
+            </Text>
+          </TouchableOpacity>
         </View>
-
-        <Text style={styles.label}>Unloading Bay</Text>
-        <TextInput
-          style={styles.textInput}
-          placeholder="Enter unloading bay"
-          value={unloadingBay}
-          onChangeText={setUnloadingBay}
-        />
-
-        <Text style={styles.label}>Remarks</Text>
-        <TextInput
-          style={[styles.textInput, styles.textArea]}
-          placeholder="Enter remarks (optional)"
-          value={remarks}
-          onChangeText={setRemarks}
-          multiline
-          numberOfLines={4}
-        />
-
-        <TouchableOpacity
-          style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={loading || !selectedEntry || totalWeight === 0}
-        >
-          <Ionicons name="checkmark-circle" size={24} color="#ffffff" />
-          <Text style={styles.submitButtonText}>
-            {loading ? 'Submitting...' : 'Submit Quality Check'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -375,15 +512,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#263238',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#78909c',
     marginBottom: 16,
   },
   entriesContainer: {
     gap: 12,
+    marginBottom: 16,
   },
   entryCard: {
     backgroundColor: '#ffffff',
@@ -417,48 +550,115 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 32,
     alignItems: 'center',
+    marginBottom: 16,
   },
   emptyText: {
     fontSize: 14,
     color: '#9e9e9e',
     marginTop: 8,
   },
-  categoryCard: {
+  basePriceCard: {
+    backgroundColor: '#fff3e0',
+    borderRadius: 12,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginTop: 16,
+    borderWidth: 2,
+    borderColor: '#ff9800',
+  },
+  basePriceContent: {
+    flex: 1,
+  },
+  basePriceLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#e65100',
+    marginBottom: 8,
+  },
+  basePriceInput: {
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    padding: 16,
+    fontSize: 18,
+    fontWeight: 'bold',
+    borderWidth: 2,
+    borderColor: '#ff9800',
+  },
+  basePriceHint: {
+    fontSize: 12,
+    color: '#f57c00',
+    marginTop: 4,
+  },
+  productsSection: {
+    marginTop: 24,
+  },
+  productsSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  addButton: {
+    padding: 4,
+  },
+  hintText: {
+    fontSize: 14,
+    color: '#9e9e9e',
+    fontStyle: 'italic',
+    marginBottom: 16,
+  },
+  productCard: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    borderLeftWidth: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  categoryHeader: {
+  productCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  categoryName: {
+  productCardTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#263238',
   },
-  categoryLetter: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  categoryScroll: {
+    marginBottom: 16,
+  },
+  categoryChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 2,
+    marginRight: 8,
+  },
+  categoryChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#263238',
+  },
+  categoryChipTextActive: {
+    color: '#ffffff',
+  },
+  fieldContainer: {
+    marginBottom: 12,
   },
   inputRow: {
     flexDirection: 'row',
     gap: 12,
+    marginBottom: 12,
   },
   inputContainer: {
     flex: 1,
-  },
-  productNameContainer: {
-    marginBottom: 12,
   },
   inputLabel: {
     fontSize: 14,
@@ -473,10 +673,31 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
+  rateCard: {
+    backgroundColor: '#e3f2fd',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  rateLabel: {
+    fontSize: 14,
+    color: '#1565c0',
+  },
+  rateValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#0d47a1',
+  },
+  rateDiff: {
+    fontSize: 12,
+    color: '#1976d2',
+  },
   amountRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
@@ -515,7 +736,7 @@ const styles = StyleSheet.create({
     color: '#2e7d32',
   },
   totalValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#1b5e20',
   },
