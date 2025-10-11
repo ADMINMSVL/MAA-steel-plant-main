@@ -277,12 +277,20 @@ async def get_users():
 @api_router.post("/gate-entry")
 async def create_gate_entry(entry: GateEntryCreate):
     entry_dict = entry.dict()
+    
+    # If purchase order is linked, pull rate from it
+    if entry_dict.get('purchase_order_id'):
+        po = await db.purchase_orders.find_one({"_id": ObjectId(entry_dict['purchase_order_id'])})
+        if po:
+            entry_dict['rate'] = po.get('rate')
+    
     entry_obj = GateEntry(**entry_dict)
     result = await db.gate_entries.insert_one(entry_obj.dict())
     
     return {
         "message": "Gate entry created successfully",
-        "entry_id": str(result.inserted_id)
+        "entry_id": str(result.inserted_id),
+        "rate": entry_dict.get('rate')
     }
 
 @api_router.get("/gate-entry")
