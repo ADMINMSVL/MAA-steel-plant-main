@@ -103,6 +103,7 @@ class WeighbridgeCreate(BaseModel):
 class QualityCategory(BaseModel):
     weight: Optional[float] = None
     rate: Optional[float] = None
+    product_name: Optional[str] = None  # For "Others" category to specify custom product
 
 class QualityInspection(BaseModel):
     gate_entry_id: str
