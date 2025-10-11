@@ -28,6 +28,20 @@ export default function Orders() {
       screen: '/orders/sales',
     },
     {
+      icon: 'construct',
+      title: 'Manufacturing Hourly',
+      description: 'Track hourly production',
+      color: '#ff5722',
+      screen: '/manufacturing/hourly',
+    },
+    {
+      icon: 'send',
+      title: 'Dispatch',
+      description: 'Manage dispatch operations',
+      color: '#9c27b0',
+      screen: '/dispatch',
+    },
+    {
       icon: 'bar-chart',
       title: 'Material Consumption',
       description: 'Track material usage',
@@ -38,7 +52,7 @@ export default function Orders() {
       icon: 'trending-up',
       title: 'Material Yield',
       description: 'Calculate and track yield',
-      color: '#9c27b0',
+      color: '#607d8b',
       screen: '/material/yield',
     },
   ];
