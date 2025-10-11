@@ -100,11 +100,22 @@ class WeighbridgeCreate(BaseModel):
     tare_weight: Optional[float] = None
     operator_id: str
 
+class QualityCategory(BaseModel):
+    weight: Optional[float] = None
+    rate: Optional[float] = None
+
 class QualityInspection(BaseModel):
     gate_entry_id: str
-    quality_grade: str
-    moisture_content: Optional[float] = None
-    impurities: Optional[str] = None
+    colour_tin: Optional[QualityCategory] = None
+    tin: Optional[QualityCategory] = None
+    light: Optional[QualityCategory] = None
+    kabadi: Optional[QualityCategory] = None
+    selected: Optional[QualityCategory] = None
+    p2p: Optional[QualityCategory] = None
+    mill_heavy: Optional[QualityCategory] = None
+    others: Optional[QualityCategory] = None
+    total_weight: Optional[float] = None
+    total_amount: Optional[float] = None
     remarks: Optional[str] = None
     status: str  # approved, rejected, conditional
     inspector_id: str
@@ -113,9 +124,14 @@ class QualityInspection(BaseModel):
 
 class QualityInspectionCreate(BaseModel):
     gate_entry_id: str
-    quality_grade: str
-    moisture_content: Optional[float] = None
-    impurities: Optional[str] = None
+    colour_tin: Optional[Dict[str, float]] = None
+    tin: Optional[Dict[str, float]] = None
+    light: Optional[Dict[str, float]] = None
+    kabadi: Optional[Dict[str, float]] = None
+    selected: Optional[Dict[str, float]] = None
+    p2p: Optional[Dict[str, float]] = None
+    mill_heavy: Optional[Dict[str, float]] = None
+    others: Optional[Dict[str, float]] = None
     remarks: Optional[str] = None
     status: str
     inspector_id: str
