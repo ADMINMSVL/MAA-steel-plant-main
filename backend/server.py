@@ -339,51 +339,7 @@ async def delete_sales_order(order_id: str):
 
 # ===== WEIGHBRIDGE ROUTES =====
 
-async def extract_weight_from_image(base64_image: str) -> Optional[float]:
-    """Use GPT-4 Vision to extract weight from image"""
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {EMERGENT_LLM_KEY}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": "gpt-4o",
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": [
-                                {
-                                    "type": "text",
-                                    "text": "Extract the weight value from this weighbridge display. Return ONLY the numeric weight value in kilograms. If you see multiple values, return the main weight reading. Return just the number, nothing else."
-                                },
-                                {
-                                    "type": "image_url",
-                                    "image_url": {
-                                        "url": f"data:image/jpeg;base64,{base64_image}"
-                                    }
-                                }
-                            ]
-                        }
-                    ],
-                    "max_tokens": 50
-                }
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                weight_str = data['choices'][0]['message']['content'].strip()
-                # Extract numeric value
-                import re
-                numbers = re.findall(r'\d+\.?\d*', weight_str)
-                if numbers:
-                    return float(numbers[0])
-            return None
-    except Exception as e:
-        logging.error(f"OCR Error: {e}")
-        return None
+# OCR function removed - Manual weight entry only
 
 @api_router.post("/weighbridge")
 async def create_weighbridge_entry(weighbridge: WeighbridgeCreate):
