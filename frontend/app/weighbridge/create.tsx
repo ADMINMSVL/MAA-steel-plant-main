@@ -6,14 +6,12 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  Image,
   ActivityIndicator,
   TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 
 export default function CreateWeighbridge() {
   const router = useRouter();
@@ -63,40 +61,6 @@ export default function CreateWeighbridge() {
     }
   };
 
-  const takePhoto = async () => {
-    try {
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        quality: 0.8,
-        base64: true,
-      });
-
-      if (!result.canceled && result.assets[0].base64) {
-        setImage(result.assets[0].base64);
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to capture photo');
-    }
-  };
-
-  const pickImage = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        quality: 0.8,
-        base64: true,
-      });
-
-      if (!result.canceled && result.assets[0].base64) {
-        setImage(result.assets[0].base64);
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to pick image');
-    }
-  };
-
   const handleSubmit = async () => {
     if (!selectedEntry) {
       Alert.alert('Error', 'Please select a gate entry');
@@ -120,8 +84,8 @@ export default function CreateWeighbridge() {
           weight_2: weight2 ? parseFloat(weight2) : null,
           weight_3: weight3 ? parseFloat(weight3) : null,
           weight_4: weight4 ? parseFloat(weight4) : null,
-          gross_weight: grossWeight ? parseFloat(grossWeight) : null,
-          tare_weight: tareWeight ? parseFloat(tareWeight) : null,
+          gross_weight: parseFloat(grossWeight),
+          tare_weight: parseFloat(tareWeight),
           operator_id: user?.id || '',
         }),
       });
@@ -134,7 +98,7 @@ export default function CreateWeighbridge() {
       
       Alert.alert(
         'Success!',
-        `Weighbridge entry created successfully!\n\nNet Weight: ${data.net_weight || 'N/A'} kg${data.rate ? `\nRate: ₹${data.rate}/kg` : ''}`,
+        `Weighbridge entry created!\n\nNet Weight: ${data.net_weight || netWeight} kg${data.rate ? `\nRate: ₹${data.rate}/kg` : ''}`,
         [
           {
             text: 'Done',
@@ -143,7 +107,8 @@ export default function CreateWeighbridge() {
         ]
       );
     } catch (error) {
-      Alert.alert('Error', 'Failed to create weighbridge entry');
+      console.error('Submit error:', error);
+      Alert.alert('Error', 'Failed to create weighbridge entry. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -196,33 +161,8 @@ export default function CreateWeighbridge() {
           </View>
         )}
 
-        <Text style={[styles.label, { marginTop: 24 }]}>Weighbridge Photo (Documentation)</Text>
-        
-        {image ? (
-          <View style={styles.imageContainer}>
-            <Image
-              source={{ uri: `data:image/jpeg;base64,${image}` }}
-              style={styles.image}
-            />
-            <TouchableOpacity style={styles.removeButton} onPress={() => setImage(null)}>
-              <Ionicons name="close-circle" size={32} color="#d32f2f" />
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.cameraButtons}>
-            <TouchableOpacity style={styles.cameraButton} onPress={takePhoto}>
-              <Ionicons name="camera" size={32} color="#ffffff" />
-              <Text style={styles.cameraButtonText}>Take Photo</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.galleryButton} onPress={pickImage}>
-              <Ionicons name="images" size={32} color="#2196f3" />
-              <Text style={styles.galleryButtonText}>Choose from Gallery</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
         <View style={styles.weightSection}>
-          <Text style={styles.sectionTitle}>Weight Readings</Text>
+          <Text style={styles.sectionTitle}>Weight Readings (Optional)</Text>
           <View style={styles.weightRow}>
             <View style={styles.weightInput}>
               <Text style={styles.weightLabel}>Weight 1 (kg)</Text>
@@ -271,12 +211,12 @@ export default function CreateWeighbridge() {
         </View>
 
         <View style={styles.calculationSection}>
-          <Text style={styles.sectionTitle}>Weight Calculation</Text>
+          <Text style={styles.sectionTitle}>Weight Calculation *</Text>
           <View style={styles.calcRow}>
             <Text style={styles.calcLabel}>Gross Weight (kg)</Text>
             <TextInput
               style={styles.calcInput}
-              placeholder="0"
+              placeholder="Enter gross weight"
               value={grossWeight}
               onChangeText={setGrossWeight}
               keyboardType="numeric"
@@ -287,7 +227,7 @@ export default function CreateWeighbridge() {
             <Text style={styles.calcLabel}>Tare Weight (kg)</Text>
             <TextInput
               style={styles.calcInput}
-              placeholder="0"
+              placeholder="Enter tare weight"
               value={tareWeight}
               onChangeText={setTareWeight}
               keyboardType="numeric"
@@ -308,11 +248,11 @@ export default function CreateWeighbridge() {
         <TouchableOpacity
           style={[styles.submitButton, loading && styles.submitButtonDisabled]}
           onPress={handleSubmit}
-          disabled={loading || !selectedEntry || !image}
+          disabled={loading || !selectedEntry || !grossWeight || !tareWeight}
         >
           <Ionicons name="checkmark-circle" size={24} color="#ffffff" />
           <Text style={styles.submitButtonText}>
-            {loading ? 'Processing...' : 'Submit Weighbridge Entry'}
+            {loading ? 'Submitting...' : 'Submit Weighbridge Entry'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -356,6 +296,7 @@ const styles = StyleSheet.create({
   },
   entriesContainer: {
     gap: 12,
+    marginBottom: 24,
   },
   entryCard: {
     backgroundColor: '#ffffff',
@@ -389,66 +330,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 32,
     alignItems: 'center',
+    marginBottom: 24,
   },
   emptyText: {
     fontSize: 14,
     color: '#9e9e9e',
     marginTop: 8,
   },
-  cameraButtons: {
-    gap: 12,
-  },
-  cameraButton: {
-    backgroundColor: '#2196f3',
-    borderRadius: 8,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  cameraButtonText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  galleryButton: {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    borderWidth: 2,
-    borderColor: '#2196f3',
-  },
-  galleryButtonText: {
-    color: '#2196f3',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  imageContainer: {
-    position: 'relative',
-    marginBottom: 16,
-  },
-  image: {
-    width: '100%',
-    height: 200,
-    borderRadius: 8,
-  },
-  removeButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-  },
   weightSection: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
-    marginTop: 24,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 18,
@@ -481,7 +374,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#e3f2fd',
     borderRadius: 12,
     padding: 16,
-    marginTop: 16,
+    marginBottom: 16,
   },
   calcRow: {
     marginBottom: 16,
@@ -524,15 +417,15 @@ const styles = StyleSheet.create({
   submitButton: {
     backgroundColor: '#ff9800',
     borderRadius: 8,
-    padding: 16,
+    padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 32,
     gap: 8,
   },
   submitButtonDisabled: {
     backgroundColor: '#ffcc80',
+    opacity: 0.6,
   },
   submitButtonText: {
     color: '#ffffff',
