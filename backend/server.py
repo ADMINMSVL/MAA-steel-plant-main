@@ -341,6 +341,11 @@ async def create_weighbridge_entry(weighbridge: WeighbridgeCreate):
     
     weighbridge_dict = weighbridge.dict()
     weighbridge_dict['extracted_weight'] = extracted_weight
+    
+    # Calculate net weight if gross and tare are provided
+    if weighbridge_dict.get('gross_weight') and weighbridge_dict.get('tare_weight'):
+        weighbridge_dict['net_weight'] = weighbridge_dict['gross_weight'] - weighbridge_dict['tare_weight']
+    
     weighbridge_obj = Weighbridge(**weighbridge_dict)
     
     result = await db.weighbridge.insert_one(weighbridge_obj.dict())
@@ -354,7 +359,8 @@ async def create_weighbridge_entry(weighbridge: WeighbridgeCreate):
     return {
         "message": "Weighbridge entry created successfully",
         "weighbridge_id": str(result.inserted_id),
-        "extracted_weight": extracted_weight
+        "extracted_weight": extracted_weight,
+        "net_weight": weighbridge_dict.get('net_weight')
     }
 
 @api_router.get("/weighbridge")
