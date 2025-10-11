@@ -389,17 +389,6 @@ async def extract_weight_from_image(base64_image: str) -> Optional[float]:
 async def create_weighbridge_entry(weighbridge: WeighbridgeCreate):
     weighbridge_dict = weighbridge.dict()
     
-    # Try to extract weight from image using OCR (but don't fail if it doesn't work)
-    extracted_weight = None
-    try:
-        # Only try OCR if image is not too large (< 2MB base64)
-        if len(weighbridge.weight_image) < 2000000:
-            extracted_weight = await extract_weight_from_image(weighbridge.weight_image)
-    except Exception as e:
-        logging.warning(f"OCR failed, continuing without extracted weight: {e}")
-    
-    weighbridge_dict['extracted_weight'] = extracted_weight
-    
     # Calculate net weight if gross and tare are provided
     if weighbridge_dict.get('gross_weight') and weighbridge_dict.get('tare_weight'):
         weighbridge_dict['net_weight'] = weighbridge_dict['gross_weight'] - weighbridge_dict['tare_weight']
@@ -432,7 +421,6 @@ async def create_weighbridge_entry(weighbridge: WeighbridgeCreate):
     return {
         "message": "Weighbridge entry created successfully",
         "weighbridge_id": str(result.inserted_id),
-        "extracted_weight": extracted_weight,
         "net_weight": weighbridge_dict.get('net_weight'),
         "rate": weighbridge_dict.get('rate')
     }
