@@ -316,6 +316,7 @@ export default function CreateQualityCheck() {
         </TouchableOpacity>
       </View>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
