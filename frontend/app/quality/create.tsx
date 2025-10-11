@@ -387,6 +387,15 @@ export default function CreateQualityCheck() {
                   </View>
                 )}
               </View>
+              
+              {/* Add button after each product */}
+              <TouchableOpacity 
+                style={styles.addNextButton}
+                onPress={addProductEntry}
+              >
+                <Ionicons name="add-circle" size={40} color="#4caf50" />
+                <Text style={styles.addNextButtonText}>Add Product #{index + 2}</Text>
+              </TouchableOpacity>
             ))}
           </View>
 
