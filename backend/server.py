@@ -89,6 +89,7 @@ class Weighbridge(BaseModel):
     gross_weight: Optional[float] = None
     tare_weight: Optional[float] = None
     net_weight: Optional[float] = None
+    rate: Optional[float] = None  # Inherited from gate entry
     weight_date: datetime = Field(default_factory=datetime.utcnow)
     operator_id: str
 
