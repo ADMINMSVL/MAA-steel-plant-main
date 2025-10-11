@@ -316,6 +316,27 @@ async def update_gate_entry_status(entry_id: str, status: str):
         raise HTTPException(status_code=404, detail="Entry not found")
     return {"message": "Status updated successfully"}
 
+@api_router.delete("/gate-entry/{entry_id}")
+async def delete_gate_entry(entry_id: str):
+    result = await db.gate_entries.delete_one({"_id": ObjectId(entry_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return {"message": "Gate entry deleted successfully"}
+
+@api_router.delete("/purchase-order/{order_id}")
+async def delete_purchase_order(order_id: str):
+    result = await db.purchase_orders.delete_one({"_id": ObjectId(order_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return {"message": "Purchase order deleted successfully"}
+
+@api_router.delete("/sales-order/{order_id}")
+async def delete_sales_order(order_id: str):
+    result = await db.sales_orders.delete_one({"_id": ObjectId(order_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return {"message": "Sales order deleted successfully"}
+
 # ===== WEIGHBRIDGE ROUTES =====
 
 async def extract_weight_from_image(base64_image: str) -> Optional[float]:
