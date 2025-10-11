@@ -79,13 +79,25 @@ class Weighbridge(BaseModel):
     gate_entry_id: str
     weight_image: str  # base64
     extracted_weight: Optional[float] = None
-    manual_weight: Optional[float] = None
+    weight_1: Optional[float] = None
+    weight_2: Optional[float] = None
+    weight_3: Optional[float] = None
+    weight_4: Optional[float] = None
+    gross_weight: Optional[float] = None
+    tare_weight: Optional[float] = None
+    net_weight: Optional[float] = None
     weight_date: datetime = Field(default_factory=datetime.utcnow)
     operator_id: str
 
 class WeighbridgeCreate(BaseModel):
     gate_entry_id: str
     weight_image: str
+    weight_1: Optional[float] = None
+    weight_2: Optional[float] = None
+    weight_3: Optional[float] = None
+    weight_4: Optional[float] = None
+    gross_weight: Optional[float] = None
+    tare_weight: Optional[float] = None
     operator_id: str
 
 class QualityInspection(BaseModel):
