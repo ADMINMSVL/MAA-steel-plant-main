@@ -62,6 +62,7 @@ export default function CreateGateEntry() {
           material_type: materialType,
           supplier: supplier,
           party_weight: partyWeight ? parseFloat(partyWeight) : null,
+          purchase_order_id: selectedPO?._id || null,
           operator_id: user?.id || '',
         }),
       });
