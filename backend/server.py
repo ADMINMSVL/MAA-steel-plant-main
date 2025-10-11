@@ -406,9 +406,13 @@ async def create_weighbridge_entry(weighbridge: WeighbridgeCreate):
     
     # Inherit rate from gate entry
     try:
-        gate_entry = await db.gate_entries.find_one({"_id": ObjectId(weighbridge.gate_entry_id)})
-        if gate_entry and gate_entry.get('rate'):
-            weighbridge_dict['rate'] = gate_entry.get('rate')
+        from bson.errors import InvalidId
+        try:
+            gate_entry = await db.gate_entries.find_one({"_id": ObjectId(weighbridge.gate_entry_id)})
+            if gate_entry and gate_entry.get('rate'):
+                weighbridge_dict['rate'] = gate_entry.get('rate')
+        except InvalidId:
+            logging.warning(f"Invalid gate entry ID format: {weighbridge.gate_entry_id}")
     except Exception as e:
         logging.warning(f"Could not fetch gate entry: {e}")
     
