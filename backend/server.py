@@ -406,6 +406,22 @@ async def update_manual_weight(weighbridge_id: str, manual_weight: float):
 @api_router.post("/quality-inspection")
 async def create_quality_inspection(inspection: QualityInspectionCreate):
     inspection_dict = inspection.dict()
+    
+    # Calculate total weight and amount
+    total_weight = 0
+    total_amount = 0
+    
+    categories = ['colour_tin', 'tin', 'light', 'kabadi', 'selected', 'p2p', 'mill_heavy', 'others']
+    for cat in categories:
+        if inspection_dict.get(cat):
+            weight = inspection_dict[cat].get('weight', 0) or 0
+            rate = inspection_dict[cat].get('rate', 0) or 0
+            total_weight += weight
+            total_amount += (weight * rate)
+    
+    inspection_dict['total_weight'] = total_weight
+    inspection_dict['total_amount'] = total_amount
+    
     inspection_obj = QualityInspection(**inspection_dict)
     result = await db.quality_inspections.insert_one(inspection_obj.dict())
     
@@ -417,7 +433,9 @@ async def create_quality_inspection(inspection: QualityInspectionCreate):
     
     return {
         "message": "Quality inspection created successfully",
-        "inspection_id": str(result.inserted_id)
+        "inspection_id": str(result.inserted_id),
+        "total_weight": total_weight,
+        "total_amount": total_amount
     }
 
 @api_router.get("/quality-inspection")
