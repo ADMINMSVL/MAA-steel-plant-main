@@ -97,12 +97,43 @@ export default function PurchaseOrders() {
     }
   };
 
+  const handleDelete = async (id: string, poNumber: string) => {
+    Alert.alert(
+      'Delete Purchase Order',
+      `Are you sure you want to delete ${poNumber}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await fetch(`${BACKEND_URL}/api/purchase-order/${id}`, {
+                method: 'DELETE',
+              });
+              if (!response.ok) throw new Error('Failed to delete');
+              Alert.alert('Success', 'Purchase order deleted successfully');
+              fetchOrders();
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete purchase order');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const renderOrder = ({ item }: any) => (
     <View style={styles.orderCard}>
       <View style={styles.orderHeader}>
         <Text style={styles.poNumber}>{item.po_number}</Text>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-          <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
+        <View style={styles.orderHeaderRight}>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+            <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
+          </View>
+          <TouchableOpacity onPress={() => handleDelete(item._id, item.po_number)}>
+            <Ionicons name="trash" size={20} color="#f44336" />
+          </TouchableOpacity>
         </View>
       </View>
       
