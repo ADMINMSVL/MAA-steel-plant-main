@@ -397,6 +397,7 @@ export default function CreateQualityCheck() {
                 <Ionicons name="add-circle" size={40} color="#4caf50" />
                 <Text style={styles.addNextButtonText}>Add Product #{index + 2}</Text>
               </TouchableOpacity>
+              </React.Fragment>
             ))}
           </View>
 
