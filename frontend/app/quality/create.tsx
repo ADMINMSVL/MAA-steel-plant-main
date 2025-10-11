@@ -113,6 +113,7 @@ export default function CreateQualityCheck() {
           qualityData[cat.key] = {
             weight: parseFloat(cat.state.weight) || null,
             rate: parseFloat(cat.state.rate) || null,
+            product_name: cat.state.product_name || null,
           };
         }
       });
