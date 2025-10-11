@@ -57,15 +57,49 @@ export default function GateEntryList() {
     }
   };
 
+  const handleDelete = async (id: string, vehicleNumber: string) => {
+    Alert.alert(
+      'Delete Entry',
+      `Are you sure you want to delete ${vehicleNumber}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await fetch(`${BACKEND_URL}/api/gate-entry/${id}`, {
+                method: 'DELETE',
+              });
+              if (!response.ok) throw new Error('Failed to delete');
+              Alert.alert('Success', 'Entry deleted successfully');
+              fetchEntries();
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete entry');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const renderEntry = ({ item }: any) => (
     <TouchableOpacity style={styles.card}>
       <View style={styles.cardHeader}>
-        <View>
+        <View style={styles.cardHeaderLeft}>
           <Text style={styles.vehicleNumber}>{item.vehicle_number}</Text>
           <Text style={styles.materialType}>{item.material_type}</Text>
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-          <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
+        <View style={styles.cardHeaderRight}>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+            <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => handleDelete(item._id, item.vehicle_number)}
+            style={styles.deleteButton}
+          >
+            <Ionicons name="trash" size={20} color="#f44336" />
+          </TouchableOpacity>
         </View>
       </View>
 
