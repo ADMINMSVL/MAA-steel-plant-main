@@ -8,6 +8,7 @@ import {
   Alert,
   Image,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -20,7 +21,13 @@ export default function CreateWeighbridge() {
   const [gateEntries, setGateEntries] = useState([]);
   const [selectedEntry, setSelectedEntry] = useState<any>(null);
   const [image, setImage] = useState<string | null>(null);
-  const [extractedWeight, setExtractedWeight] = useState<number | null>(null);
+  const [weight1, setWeight1] = useState('');
+  const [weight2, setWeight2] = useState('');
+  const [weight3, setWeight3] = useState('');
+  const [weight4, setWeight4] = useState('');
+  const [grossWeight, setGrossWeight] = useState('');
+  const [tareWeight, setTareWeight] = useState('');
+  const [netWeight, setNetWeight] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingEntries, setLoadingEntries] = useState(true);
 
@@ -31,6 +38,10 @@ export default function CreateWeighbridge() {
     requestPermissions();
   }, []);
 
+  useEffect(() => {
+    calculateNetWeight();
+  }, [grossWeight, tareWeight]);
+
   const requestPermissions = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
@@ -38,11 +49,20 @@ export default function CreateWeighbridge() {
     }
   };
 
+  const calculateNetWeight = () => {
+    const gross = parseFloat(grossWeight) || 0;
+    const tare = parseFloat(tareWeight) || 0;
+    if (gross > 0 && tare > 0) {
+      setNetWeight((gross - tare).toString());
+    } else {
+      setNetWeight('');
+    }
+  };
+
   const fetchGateEntries = async () => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/gate-entry`);
       const data = await response.json();
-      // Filter only entered status
       const pendingEntries = data.filter((e: any) => e.status === 'entered');
       setGateEntries(pendingEntries);
     } catch (error) {
@@ -100,6 +120,12 @@ export default function CreateWeighbridge() {
         body: JSON.stringify({
           gate_entry_id: selectedEntry._id,
           weight_image: image,
+          weight_1: weight1 ? parseFloat(weight1) : null,
+          weight_2: weight2 ? parseFloat(weight2) : null,
+          weight_3: weight3 ? parseFloat(weight3) : null,
+          weight_4: weight4 ? parseFloat(weight4) : null,
+          gross_weight: grossWeight ? parseFloat(grossWeight) : null,
+          tare_weight: tareWeight ? parseFloat(tareWeight) : null,
           operator_id: user?.id || '',
         }),
       });
@@ -109,11 +135,10 @@ export default function CreateWeighbridge() {
       }
 
       const data = await response.json();
-      setExtractedWeight(data.extracted_weight);
       
       Alert.alert(
         'Success',
-        `Weighbridge entry created!\n${data.extracted_weight ? `Extracted Weight: ${data.extracted_weight} kg` : 'Weight could not be extracted, please enter manually.'}`,
+        `Weighbridge entry created!\nNet Weight: ${data.net_weight || 'N/A'} kg`,
         [
           {
             text: 'Done',
@@ -175,7 +200,7 @@ export default function CreateWeighbridge() {
           </View>
         )}
 
-        <Text style={[styles.label, { marginTop: 24 }]}>Weighbridge Photo *</Text>
+        <Text style={[styles.label, { marginTop: 24 }]}>Weight Capture</Text>
         
         {image ? (
           <View style={styles.imageContainer}>
@@ -200,12 +225,89 @@ export default function CreateWeighbridge() {
           </View>
         )}
 
-        {extractedWeight && (
-          <View style={styles.weightCard}>
-            <Ionicons name="scale" size={32} color="#4caf50" />
-            <Text style={styles.weightText}>Extracted Weight: {extractedWeight} kg</Text>
+        <View style={styles.weightSection}>
+          <Text style={styles.sectionTitle}>Weight Readings</Text>
+          <View style={styles.weightRow}>
+            <View style={styles.weightInput}>
+              <Text style={styles.weightLabel}>Weight 1 (kg)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="0"
+                value={weight1}
+                onChangeText={setWeight1}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={styles.weightInput}>
+              <Text style={styles.weightLabel}>Weight 2 (kg)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="0"
+                value={weight2}
+                onChangeText={setWeight2}
+                keyboardType="numeric"
+              />
+            </View>
           </View>
-        )}
+
+          <View style={styles.weightRow}>
+            <View style={styles.weightInput}>
+              <Text style={styles.weightLabel}>Weight 3 (kg)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="0"
+                value={weight3}
+                onChangeText={setWeight3}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={styles.weightInput}>
+              <Text style={styles.weightLabel}>Weight 4 (kg)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="0"
+                value={weight4}
+                onChangeText={setWeight4}
+                keyboardType="numeric"
+              />
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.calculationSection}>
+          <Text style={styles.sectionTitle}>Weight Calculation</Text>
+          <View style={styles.calcRow}>
+            <Text style={styles.calcLabel}>Gross Weight (kg)</Text>
+            <TextInput
+              style={styles.calcInput}
+              placeholder="0"
+              value={grossWeight}
+              onChangeText={setGrossWeight}
+              keyboardType="numeric"
+            />
+          </View>
+          
+          <View style={styles.calcRow}>
+            <Text style={styles.calcLabel}>Tare Weight (kg)</Text>
+            <TextInput
+              style={styles.calcInput}
+              placeholder="0"
+              value={tareWeight}
+              onChangeText={setTareWeight}
+              keyboardType="numeric"
+            />
+          </View>
+
+          {netWeight && (
+            <View style={styles.netWeightCard}>
+              <Ionicons name="calculator" size={32} color="#4caf50" />
+              <View>
+                <Text style={styles.netWeightLabel}>Net Weight</Text>
+                <Text style={styles.netWeightValue}>{netWeight} kg</Text>
+              </View>
+            </View>
+          )}
+        </View>
 
         <TouchableOpacity
           style={[styles.submitButton, loading && styles.submitButtonDisabled]}
@@ -336,7 +438,7 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    height: 300,
+    height: 200,
     borderRadius: 8,
   },
   removeButton: {
@@ -346,19 +448,82 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 16,
   },
-  weightCard: {
+  weightSection: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#263238',
+    marginBottom: 16,
+  },
+  weightRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  weightInput: {
+    flex: 1,
+  },
+  weightLabel: {
+    fontSize: 14,
+    color: '#546e7a',
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  calculationSection: {
+    backgroundColor: '#e3f2fd',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+  },
+  calcRow: {
+    marginBottom: 16,
+  },
+  calcLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#263238',
+    marginBottom: 8,
+  },
+  calcInput: {
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    padding: 16,
+    fontSize: 18,
+    fontWeight: 'bold',
+    borderWidth: 2,
+    borderColor: '#2196f3',
+  },
+  netWeightCard: {
     backgroundColor: '#e8f5e9',
     borderRadius: 8,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginTop: 16,
+    gap: 16,
+    marginTop: 8,
+    borderWidth: 2,
+    borderColor: '#4caf50',
   },
-  weightText: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  netWeightLabel: {
+    fontSize: 14,
     color: '#2e7d32',
+  },
+  netWeightValue: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#1b5e20',
   },
   submitButton: {
     backgroundColor: '#ff9800',
