@@ -274,4 +274,68 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 8,
   },
+  poContainer: {
+    marginBottom: 16,
+  },
+  poCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+  },
+  poCardSelected: {
+    borderColor: '#4caf50',
+    backgroundColor: '#e8f5e9',
+  },
+  poCardContent: {
+    flex: 1,
+  },
+  poNumber: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#263238',
+  },
+  poMaterial: {
+    fontSize: 14,
+    color: '#546e7a',
+    marginTop: 4,
+  },
+  poRate: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4caf50',
+    marginTop: 4,
+  },
+  noPOCard: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  noPOText: {
+    fontSize: 14,
+    color: '#9e9e9e',
+    marginLeft: 8,
+  },
+  rateInfoCard: {
+    backgroundColor: '#e8f5e9',
+    borderRadius: 8,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  rateInfoText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2e7d32',
+    marginLeft: 8,
+  },
 });
