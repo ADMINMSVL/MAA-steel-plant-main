@@ -107,8 +107,13 @@ export default function CreateWeighbridge() {
   };
 
   const handleSubmit = async () => {
-    if (!selectedEntry || !image) {
-      Alert.alert('Error', 'Please select an entry and capture/upload a photo');
+    if (!selectedEntry) {
+      Alert.alert('Error', 'Please select a gate entry');
+      return;
+    }
+
+    if (!grossWeight || !tareWeight) {
+      Alert.alert('Error', 'Please enter Gross Weight and Tare Weight');
       return;
     }
 
@@ -119,7 +124,7 @@ export default function CreateWeighbridge() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           gate_entry_id: selectedEntry._id,
-          weight_image: image,
+          weight_image: 'no-photo',
           weight_1: weight1 ? parseFloat(weight1) : null,
           weight_2: weight2 ? parseFloat(weight2) : null,
           weight_3: weight3 ? parseFloat(weight3) : null,
