@@ -39,7 +39,7 @@ export default function CreateQualityCheck() {
   const [selected, setSelected] = useState<CategoryData>({ weight: '', rate: '' });
   const [p2p, setP2p] = useState<CategoryData>({ weight: '', rate: '' });
   const [millHeavy, setMillHeavy] = useState<CategoryData>({ weight: '', rate: '' });
-  const [others, setOthers] = useState<CategoryData>({ weight: '', rate: '' });
+  const [others, setOthers] = useState<CategoryData>({ weight: '', rate: '', product_name: '' });
 
   const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
