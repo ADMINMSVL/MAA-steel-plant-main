@@ -133,6 +133,15 @@ export default function CreateGateEntry() {
             onChangeText={setSupplier}
           />
 
+          <Text style={styles.label}>Party Weight (kg)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter party weight (optional)"
+            value={partyWeight}
+            onChangeText={setPartyWeight}
+            keyboardType="numeric"
+          />
+
           <TouchableOpacity
             style={[styles.submitButton, loading && styles.submitButtonDisabled]}
             onPress={handleSubmit}
