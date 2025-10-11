@@ -62,6 +62,8 @@ class GateEntry(BaseModel):
     material_type: str
     supplier: str
     party_weight: Optional[float] = None
+    purchase_order_id: Optional[str] = None
+    rate: Optional[float] = None  # Rate from purchase order
     entry_date: datetime = Field(default_factory=datetime.utcnow)
     operator_id: str
     status: str = "entered"  # entered, weighed, inspected, completed
@@ -73,6 +75,7 @@ class GateEntryCreate(BaseModel):
     material_type: str
     supplier: str
     party_weight: Optional[float] = None
+    purchase_order_id: Optional[str] = None
     operator_id: str
 
 class Weighbridge(BaseModel):
