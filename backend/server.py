@@ -387,10 +387,17 @@ async def extract_weight_from_image(base64_image: str) -> Optional[float]:
 
 @api_router.post("/weighbridge")
 async def create_weighbridge_entry(weighbridge: WeighbridgeCreate):
-    # Extract weight from image using OCR
-    extracted_weight = await extract_weight_from_image(weighbridge.weight_image)
-    
     weighbridge_dict = weighbridge.dict()
+    
+    # Try to extract weight from image using OCR (but don't fail if it doesn't work)
+    extracted_weight = None
+    try:
+        # Only try OCR if image is not too large (< 2MB base64)
+        if len(weighbridge.weight_image) < 2000000:
+            extracted_weight = await extract_weight_from_image(weighbridge.weight_image)
+    except Exception as e:
+        logging.warning(f"OCR failed, continuing without extracted weight: {e}")
+    
     weighbridge_dict['extracted_weight'] = extracted_weight
     
     # Calculate net weight if gross and tare are provided
@@ -398,19 +405,25 @@ async def create_weighbridge_entry(weighbridge: WeighbridgeCreate):
         weighbridge_dict['net_weight'] = weighbridge_dict['gross_weight'] - weighbridge_dict['tare_weight']
     
     # Inherit rate from gate entry
-    gate_entry = await db.gate_entries.find_one({"_id": ObjectId(weighbridge.gate_entry_id)})
-    if gate_entry and gate_entry.get('rate'):
-        weighbridge_dict['rate'] = gate_entry.get('rate')
+    try:
+        gate_entry = await db.gate_entries.find_one({"_id": ObjectId(weighbridge.gate_entry_id)})
+        if gate_entry and gate_entry.get('rate'):
+            weighbridge_dict['rate'] = gate_entry.get('rate')
+    except Exception as e:
+        logging.warning(f"Could not fetch gate entry: {e}")
     
     weighbridge_obj = Weighbridge(**weighbridge_dict)
     
     result = await db.weighbridge.insert_one(weighbridge_obj.dict())
     
     # Update gate entry status
-    await db.gate_entries.update_one(
-        {"_id": ObjectId(weighbridge.gate_entry_id)},
-        {"$set": {"status": "weighed"}}
-    )
+    try:
+        await db.gate_entries.update_one(
+            {"_id": ObjectId(weighbridge.gate_entry_id)},
+            {"$set": {"status": "weighed"}}
+        )
+    except Exception as e:
+        logging.warning(f"Could not update gate entry status: {e}")
     
     return {
         "message": "Weighbridge entry created successfully",
