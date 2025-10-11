@@ -40,13 +40,6 @@ export default function CreateWeighbridge() {
     calculateNetWeight();
   }, [grossWeight, tareWeight]);
 
-  const requestPermissions = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Camera permission is required to capture weighbridge photos');
-    }
-  };
-
   const calculateNetWeight = () => {
     const gross = parseFloat(grossWeight) || 0;
     const tare = parseFloat(tareWeight) || 0;
