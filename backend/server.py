@@ -376,6 +376,11 @@ async def create_weighbridge_entry(weighbridge: WeighbridgeCreate):
     if weighbridge_dict.get('gross_weight') and weighbridge_dict.get('tare_weight'):
         weighbridge_dict['net_weight'] = weighbridge_dict['gross_weight'] - weighbridge_dict['tare_weight']
     
+    # Inherit rate from gate entry
+    gate_entry = await db.gate_entries.find_one({"_id": ObjectId(weighbridge.gate_entry_id)})
+    if gate_entry and gate_entry.get('rate'):
+        weighbridge_dict['rate'] = gate_entry.get('rate')
+    
     weighbridge_obj = Weighbridge(**weighbridge_dict)
     
     result = await db.weighbridge.insert_one(weighbridge_obj.dict())
@@ -390,7 +395,8 @@ async def create_weighbridge_entry(weighbridge: WeighbridgeCreate):
         "message": "Weighbridge entry created successfully",
         "weighbridge_id": str(result.inserted_id),
         "extracted_weight": extracted_weight,
-        "net_weight": weighbridge_dict.get('net_weight')
+        "net_weight": weighbridge_dict.get('net_weight'),
+        "rate": weighbridge_dict.get('rate')
     }
 
 @api_router.get("/weighbridge")
