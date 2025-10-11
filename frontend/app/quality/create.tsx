@@ -279,19 +279,20 @@ export default function CreateQualityCheck() {
 
           {/* Product Entries */}
           <View style={styles.productsSection}>
-            <View style={styles.productsSectionHeader}>
-              <Text style={styles.sectionTitle}>Products & Qualities</Text>
-              <TouchableOpacity 
-                style={styles.addButton}
-                onPress={addProductEntry}
-                disabled={!p2pBasePrice}
-              >
-                <Ionicons name="add-circle" size={32} color={p2pBasePrice ? "#4caf50" : "#cccccc"} />
-              </TouchableOpacity>
-            </View>
+            <Text style={styles.sectionTitle}>Products & Qualities</Text>
             
             {!p2pBasePrice && (
               <Text style={styles.hintText}>Enter P2P base price first to add products</Text>
+            )}
+
+            {productEntries.length === 0 && p2pBasePrice && (
+              <TouchableOpacity 
+                style={styles.firstAddButton}
+                onPress={addProductEntry}
+              >
+                <Ionicons name="add-circle" size={48} color="#4caf50" />
+                <Text style={styles.firstAddButtonText}>Add First Product</Text>
+              </TouchableOpacity>
             )}
 
             {productEntries.map((entry, index) => (
