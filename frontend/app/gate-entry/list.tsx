@@ -7,18 +7,24 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function GateEntryList() {
   const router = useRouter();
+  const { user } = useAuth();
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+  
+  // Check if user has admin or manager role
+  const canDelete = user?.role === 'admin' || user?.role === 'manager';
 
   useEffect(() => {
     fetchEntries();
