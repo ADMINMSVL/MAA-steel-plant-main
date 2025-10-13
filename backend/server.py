@@ -13,6 +13,12 @@ import base64
 import httpx
 from io import BytesIO
 from PIL import Image
+from crypto_utils import (
+    hash_password, 
+    verify_password, 
+    encrypt_document, 
+    decrypt_document
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
