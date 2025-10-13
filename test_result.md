@@ -212,14 +212,14 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Authentication APIs"
-    - "Dashboard API"
-    - "Gate Entry APIs"
-    - "Weighbridge APIs"
+    - "Delete Functionality - Gate Entry"
+    - "Delete Functionality - Purchase Orders"
+    - "Delete Functionality - Sales Orders"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
+backend:
   - task: "Delete Functionality - Gate Entry"
     implemented: true
     working: "NA"
