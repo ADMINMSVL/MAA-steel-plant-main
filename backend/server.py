@@ -262,8 +262,12 @@ async def register_user(user: UserCreate):
 
 @api_router.post("/auth/login")
 async def login_user(login: UserLogin):
-    user = await db.users.find_one({"username": login.username, "pin": login.pin})
+    user = await db.users.find_one({"username": login.username})
     if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Verify PIN using bcrypt
+    if not verify_password(login.pin, user['pin']):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     return {
