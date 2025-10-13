@@ -201,6 +201,60 @@ backend:
         agent: "testing"
         comment: "✅ GET /api/weighbridge working correctly. Successfully retrieved 1 weighbridge entry with proper sorting by weight_date in descending order"
 
+  - task: "Delete Functionality - Gate Entry"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py, frontend/app/gate-entry/list.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "User reported: Admin users cannot delete trial entries. Delete button exists but no role-based access control implemented."
+      - working: "NA"
+        agent: "main"
+        comment: "Investigation complete: DELETE endpoint exists in backend (line 319-324), frontend has delete button (lines 60-84 in gate-entry/list.tsx). Issue: No role-based check to show/hide delete button based on user role. Need to implement role check in frontend to only show delete button for admin/manager roles."
+      - working: "NA"
+        agent: "main"
+        comment: "Implementation complete: Added useAuth import, user context, and canDelete check (user?.role === 'admin' || user?.role === 'manager'). Delete button now wrapped in conditional {canDelete && ...}. Ready for testing."
+
+  - task: "Delete Functionality - Purchase Orders"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py, frontend/app/orders/purchase.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "User reported: Admin users cannot delete trial entries. Same issue as Gate Entry."
+      - working: "NA"
+        agent: "main"
+        comment: "Investigation complete: DELETE endpoint exists in backend (line 326-331), frontend has delete button in orders/purchase.tsx. Issue: No role-based access control."
+      - working: "NA"
+        agent: "main"
+        comment: "Implementation complete: Added canDelete check (user?.role === 'admin' || user?.role === 'manager'). Delete button now wrapped in conditional {canDelete && ...}. Ready for testing."
+
+  - task: "Delete Functionality - Sales Orders"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py, frontend/app/orders/sales.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "User reported: Admin users cannot delete trial entries. Same issue as other delete functionality."
+      - working: "NA"
+        agent: "main"
+        comment: "Investigation complete: DELETE endpoint exists in backend (line 333-338). Need to check frontend implementation and add role-based access control."
+      - working: "NA"
+        agent: "main"
+        comment: "Implementation complete: Added handleDelete function with Alert confirmation, canDelete check (user?.role === 'admin' || user?.role === 'manager'), and conditionally rendered delete button in renderOrder. Added orderHeaderRight style. Ready for testing."
+
 frontend:
   # Frontend testing not performed as per system instructions
 
