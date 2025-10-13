@@ -421,7 +421,11 @@ def main():
         "create_gate_entry": False,
         "get_gate_entries": False,
         "create_weighbridge": False,
-        "get_weighbridge": False
+        "get_weighbridge": False,
+        "delete_gate_entry": False,
+        "delete_purchase_order": False,
+        "delete_sales_order": False,
+        "delete_error_handling": False
     }
     
     # Test Authentication APIs
@@ -451,6 +455,23 @@ def main():
     
     success = test_get_weighbridge_entries()
     results["get_weighbridge"] = success
+    
+    # Test Delete Functionality (NEW TESTS)
+    print("\n" + "=" * 60)
+    print("🗑️  TESTING DELETE FUNCTIONALITY")
+    print("=" * 60)
+    
+    success = test_delete_gate_entry(operator_id)
+    results["delete_gate_entry"] = success
+    
+    success = test_delete_purchase_order(operator_id)
+    results["delete_purchase_order"] = success
+    
+    success = test_delete_sales_order(operator_id)
+    results["delete_sales_order"] = success
+    
+    success = test_delete_error_handling()
+    results["delete_error_handling"] = success
     
     # Summary
     print("=" * 60)
