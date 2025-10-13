@@ -30,6 +30,9 @@ export default function SalesOrders() {
   const [rate, setRate] = useState('');
 
   const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+  
+  // Check if user has admin or manager role
+  const canDelete = user?.role === 'admin' || user?.role === 'manager';
 
   useEffect(() => {
     fetchOrders();
