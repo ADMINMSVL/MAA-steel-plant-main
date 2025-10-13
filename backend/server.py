@@ -412,6 +412,13 @@ async def update_manual_weight(weighbridge_id: str, manual_weight: float):
 
 # ===== QUALITY INSPECTION ROUTES =====
 
+@api_router.delete("/quality-inspection/{inspection_id}")
+async def delete_quality_inspection(inspection_id: str):
+    result = await db.quality_inspections.delete_one({"_id": ObjectId(inspection_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Quality inspection not found")
+    return {"message": "Quality inspection deleted successfully"}
+
 @api_router.post("/quality-inspection")
 async def create_quality_inspection(inspection: QualityInspectionCreate):
     inspection_dict = inspection.dict()
