@@ -217,6 +217,195 @@ def test_get_weighbridge_entries():
         print_test_result("Get Weighbridge Entries", False, f"Error: {str(e)}")
         return False
 
+def test_delete_gate_entry(operator_id):
+    """Test deleting gate entry"""
+    print("=== Testing Gate Entry - Delete ===")
+    
+    try:
+        # First create a gate entry to delete
+        gate_entry_data = {
+            "vehicle_number": "TEST_DELETE_001",
+            "driver_name": "Delete Test Driver",
+            "driver_phone": "9999999999",
+            "material_type": "Test Material",
+            "supplier": "Test Delete Supplier",
+            "operator_id": operator_id or "test_operator_id"
+        }
+        
+        response = requests.post(f"{BASE_URL}/gate-entry", json=gate_entry_data, timeout=10)
+        
+        if response.status_code != 200:
+            print_test_result("Delete Gate Entry - Create", False, f"Failed to create entry: {response.status_code}")
+            return False
+            
+        entry_id = response.json().get('entry_id')
+        print(f"   Created test entry: {entry_id}")
+        
+        # Verify it exists
+        response = requests.get(f"{BASE_URL}/gate-entry/{entry_id}", timeout=10)
+        if response.status_code != 200:
+            print_test_result("Delete Gate Entry - Verify", False, "Entry not found after creation")
+            return False
+            
+        # Now delete it
+        response = requests.delete(f"{BASE_URL}/gate-entry/{entry_id}", timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            print_test_result("Delete Gate Entry", True, f"Response: {data.get('message')}")
+            
+            # Verify it's actually deleted
+            response = requests.get(f"{BASE_URL}/gate-entry/{entry_id}", timeout=10)
+            if response.status_code == 404:
+                print_test_result("Delete Gate Entry - Verification", True, "Entry confirmed deleted from database")
+                return True
+            else:
+                print_test_result("Delete Gate Entry - Verification", False, "Entry still exists after deletion")
+                return False
+        else:
+            print_test_result("Delete Gate Entry", False, f"Status: {response.status_code}", response.text)
+            return False
+            
+    except Exception as e:
+        print_test_result("Delete Gate Entry", False, f"Error: {str(e)}")
+        return False
+
+def test_delete_purchase_order(operator_id):
+    """Test deleting purchase order"""
+    print("=== Testing Purchase Order - Delete ===")
+    
+    try:
+        # First create a purchase order to delete
+        po_data = {
+            "po_number": "TEST_DELETE_PO_001",
+            "vendor": "Test Delete Vendor",
+            "material_type": "Test Steel",
+            "quantity": 100.0,
+            "unit": "kg",
+            "rate": 50.0,
+            "created_by": operator_id or "test_operator_id"
+        }
+        
+        response = requests.post(f"{BASE_URL}/purchase-order", json=po_data, timeout=10)
+        
+        if response.status_code != 200:
+            print_test_result("Delete Purchase Order - Create", False, f"Failed to create order: {response.status_code}")
+            return False
+            
+        order_id = response.json().get('order_id')
+        print(f"   Created test order: {order_id}")
+        
+        # Verify it exists
+        response = requests.get(f"{BASE_URL}/purchase-order/{order_id}", timeout=10)
+        if response.status_code != 200:
+            print_test_result("Delete Purchase Order - Verify", False, "Order not found after creation")
+            return False
+            
+        # Now delete it
+        response = requests.delete(f"{BASE_URL}/purchase-order/{order_id}", timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            print_test_result("Delete Purchase Order", True, f"Response: {data.get('message')}")
+            
+            # Verify it's actually deleted
+            response = requests.get(f"{BASE_URL}/purchase-order/{order_id}", timeout=10)
+            if response.status_code == 404:
+                print_test_result("Delete Purchase Order - Verification", True, "Order confirmed deleted from database")
+                return True
+            else:
+                print_test_result("Delete Purchase Order - Verification", False, "Order still exists after deletion")
+                return False
+        else:
+            print_test_result("Delete Purchase Order", False, f"Status: {response.status_code}", response.text)
+            return False
+            
+    except Exception as e:
+        print_test_result("Delete Purchase Order", False, f"Error: {str(e)}")
+        return False
+
+def test_delete_sales_order(operator_id):
+    """Test deleting sales order"""
+    print("=== Testing Sales Order - Delete ===")
+    
+    try:
+        # First create a sales order to delete
+        so_data = {
+            "so_number": "TEST_DELETE_SO_001",
+            "customer": "Test Delete Customer",
+            "material_type": "Test Product",
+            "quantity": 75.0,
+            "unit": "kg",
+            "rate": 80.0,
+            "created_by": operator_id or "test_operator_id"
+        }
+        
+        response = requests.post(f"{BASE_URL}/sales-order", json=so_data, timeout=10)
+        
+        if response.status_code != 200:
+            print_test_result("Delete Sales Order - Create", False, f"Failed to create order: {response.status_code}")
+            return False
+            
+        order_id = response.json().get('order_id')
+        print(f"   Created test order: {order_id}")
+        
+        # Verify it exists
+        response = requests.get(f"{BASE_URL}/sales-order/{order_id}", timeout=10)
+        if response.status_code != 200:
+            print_test_result("Delete Sales Order - Verify", False, "Order not found after creation")
+            return False
+            
+        # Now delete it
+        response = requests.delete(f"{BASE_URL}/sales-order/{order_id}", timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            print_test_result("Delete Sales Order", True, f"Response: {data.get('message')}")
+            
+            # Verify it's actually deleted
+            response = requests.get(f"{BASE_URL}/sales-order/{order_id}", timeout=10)
+            if response.status_code == 404:
+                print_test_result("Delete Sales Order - Verification", True, "Order confirmed deleted from database")
+                return True
+            else:
+                print_test_result("Delete Sales Order - Verification", False, "Order still exists after deletion")
+                return False
+        else:
+            print_test_result("Delete Sales Order", False, f"Status: {response.status_code}", response.text)
+            return False
+            
+    except Exception as e:
+        print_test_result("Delete Sales Order", False, f"Error: {str(e)}")
+        return False
+
+def test_delete_error_handling():
+    """Test delete error handling for non-existent IDs"""
+    print("=== Testing Delete - Error Handling ===")
+    
+    try:
+        fake_id = "507f1f77bcf86cd799439011"  # Valid ObjectId format but non-existent
+        
+        # Test gate entry 404
+        response = requests.delete(f"{BASE_URL}/gate-entry/{fake_id}", timeout=10)
+        gate_404 = response.status_code == 404
+        print_test_result("Delete Non-existent Gate Entry", gate_404, f"Status: {response.status_code}")
+        
+        # Test purchase order 404
+        response = requests.delete(f"{BASE_URL}/purchase-order/{fake_id}", timeout=10)
+        po_404 = response.status_code == 404
+        print_test_result("Delete Non-existent Purchase Order", po_404, f"Status: {response.status_code}")
+        
+        # Test sales order 404
+        response = requests.delete(f"{BASE_URL}/sales-order/{fake_id}", timeout=10)
+        so_404 = response.status_code == 404
+        print_test_result("Delete Non-existent Sales Order", so_404, f"Status: {response.status_code}")
+        
+        return gate_404 and po_404 and so_404
+        
+    except Exception as e:
+        print_test_result("Delete Error Handling", False, f"Error: {str(e)}")
+        return False
+
 def main():
     """Run all backend tests"""
     print("🚀 Starting Steel Plant Backend API Tests")
