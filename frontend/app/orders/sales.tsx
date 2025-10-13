@@ -230,6 +230,7 @@ const styles = StyleSheet.create({
   list: { padding: 16 },
   orderCard: { backgroundColor: '#ffffff', borderRadius: 12, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
   orderHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  orderHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   soNumber: { fontSize: 20, fontWeight: 'bold', color: '#263238' },
   statusBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
   statusText: { color: '#ffffff', fontSize: 12, fontWeight: 'bold' },
