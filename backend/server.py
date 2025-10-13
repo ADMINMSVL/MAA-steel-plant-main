@@ -297,6 +297,9 @@ async def create_gate_entry(entry: GateEntryCreate):
         if po:
             entry_dict['rate'] = po.get('rate')
     
+    # Encrypt sensitive fields before storing
+    entry_dict = encrypt_document('gate_entries', entry_dict)
+    
     entry_obj = GateEntry(**entry_dict)
     result = await db.gate_entries.insert_one(entry_obj.dict())
     
@@ -309,7 +312,9 @@ async def create_gate_entry(entry: GateEntryCreate):
 @api_router.get("/gate-entry")
 async def get_gate_entries():
     entries = await db.gate_entries.find().sort("entry_date", -1).to_list(1000)
-    return [serialize_doc(entry) for entry in entries]
+    # Decrypt sensitive fields before sending
+    decrypted_entries = [decrypt_document('gate_entries', serialize_doc(entry)) for entry in entries]
+    return decrypted_entries
 
 @api_router.get("/gate-entry/{entry_id}")
 async def get_gate_entry(entry_id: str):
