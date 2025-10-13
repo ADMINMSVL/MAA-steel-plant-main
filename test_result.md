@@ -245,11 +245,11 @@ backend:
 
   - task: "Delete Functionality - Sales Orders"
     implemented: true
-    working: "NA"
+    working: true
     file: "backend/server.py, frontend/app/orders/sales.tsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: false
         agent: "user"
@@ -260,6 +260,9 @@ backend:
       - working: "NA"
         agent: "main"
         comment: "Implementation complete: Added handleDelete function with Alert confirmation, canDelete check (user?.role === 'admin' || user?.role === 'manager'), and conditionally rendered delete button in renderOrder. Added orderHeaderRight style. Ready for testing."
+      - working: true
+        agent: "testing"
+        comment: "✅ DELETE /api/sales-order/{order_id} working correctly. Successfully created test sales order (ID: 68ecdcd445cd21e04973fd73), deleted it with 200 response 'Sales order deleted successfully', and verified removal from database (404 on subsequent GET). Backend delete functionality fully operational."
 
 frontend:
   # Frontend testing not performed as per system instructions
