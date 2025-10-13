@@ -222,7 +222,7 @@ test_plan:
 
   - task: "Delete Functionality - Gate Entry"
     implemented: true
-    working: false
+    working: "NA"
     file: "backend/server.py, frontend/app/gate-entry/list.tsx"
     stuck_count: 0
     priority: "high"
@@ -234,6 +234,9 @@ test_plan:
       - working: "NA"
         agent: "main"
         comment: "Investigation complete: DELETE endpoint exists in backend (line 319-324), frontend has delete button (lines 60-84 in gate-entry/list.tsx). Issue: No role-based check to show/hide delete button based on user role. Need to implement role check in frontend to only show delete button for admin/manager roles."
+      - working: "NA"
+        agent: "main"
+        comment: "Implementation complete: Added useAuth import, user context, and canDelete check (user?.role === 'admin' || user?.role === 'manager'). Delete button now wrapped in conditional {canDelete && ...}. Ready for testing."
 
   - task: "Delete Functionality - Purchase Orders"
     implemented: true
