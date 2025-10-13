@@ -258,8 +258,8 @@ test_plan:
 
   - task: "Delete Functionality - Sales Orders"
     implemented: true
-    working: false
-    file: "backend/server.py, frontend/app/orders/sales.tsx (if exists)"
+    working: "NA"
+    file: "backend/server.py, frontend/app/orders/sales.tsx"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
@@ -270,6 +270,9 @@ test_plan:
       - working: "NA"
         agent: "main"
         comment: "Investigation complete: DELETE endpoint exists in backend (line 333-338). Need to check frontend implementation and add role-based access control."
+      - working: "NA"
+        agent: "main"
+        comment: "Implementation complete: Added handleDelete function with Alert confirmation, canDelete check (user?.role === 'admin' || user?.role === 'manager'), and conditionally rendered delete button in renderOrder. Added orderHeaderRight style. Ready for testing."
 
 agent_communication:
   - agent: "testing"
