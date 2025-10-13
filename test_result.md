@@ -220,6 +220,53 @@ test_plan:
   test_all: false
   test_priority: "high_first"
 
+  - task: "Delete Functionality - Gate Entry"
+    implemented: true
+    working: false
+    file: "backend/server.py, frontend/app/gate-entry/list.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "User reported: Admin users cannot delete trial entries. Delete button exists but no role-based access control implemented."
+      - working: "NA"
+        agent: "main"
+        comment: "Investigation complete: DELETE endpoint exists in backend (line 319-324), frontend has delete button (lines 60-84 in gate-entry/list.tsx). Issue: No role-based check to show/hide delete button based on user role. Need to implement role check in frontend to only show delete button for admin/manager roles."
+
+  - task: "Delete Functionality - Purchase Orders"
+    implemented: true
+    working: false
+    file: "backend/server.py, frontend/app/orders/purchase.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "User reported: Admin users cannot delete trial entries. Same issue as Gate Entry."
+      - working: "NA"
+        agent: "main"
+        comment: "Investigation complete: DELETE endpoint exists in backend (line 326-331), frontend has delete button in orders/purchase.tsx. Issue: No role-based access control."
+
+  - task: "Delete Functionality - Sales Orders"
+    implemented: true
+    working: false
+    file: "backend/server.py, frontend/app/orders/sales.tsx (if exists)"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "User reported: Admin users cannot delete trial entries. Same issue as other delete functionality."
+      - working: "NA"
+        agent: "main"
+        comment: "Investigation complete: DELETE endpoint exists in backend (line 333-338). Need to check frontend implementation and add role-based access control."
+
 agent_communication:
   - agent: "testing"
     message: "Completed comprehensive backend API testing for steel plant processing app. All 8 critical backend endpoints tested successfully: Authentication (register, login, get users), Dashboard (stats), Gate Entry (create, get all), and Weighbridge (create, get all). Backend service was initially failing due to missing httpx module but was resolved by restarting supervisor after dependencies were confirmed installed. MongoDB integration working properly. OCR functionality integrated but returns None for test image (expected behavior). All APIs returning proper JSON responses with correct status codes and data serialization."
+  - agent: "main"
+    message: "Investigated delete functionality issue reported by user. Found that DELETE endpoints exist in backend for gate-entry, purchase-order, and sales-order. Frontend has delete buttons implemented but missing role-based access control. Will implement role checks to show delete buttons only for admin/manager users. Planning to: 1) Add role check in frontend components, 2) Get user role from AuthContext, 3) Conditionally render delete buttons. Will test after implementation."
