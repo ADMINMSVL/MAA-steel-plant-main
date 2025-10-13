@@ -134,9 +134,11 @@ export default function PurchaseOrders() {
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
             <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
           </View>
-          <TouchableOpacity onPress={() => handleDelete(item._id, item.po_number)}>
-            <Ionicons name="trash" size={20} color="#f44336" />
-          </TouchableOpacity>
+          {canDelete && (
+            <TouchableOpacity onPress={() => handleDelete(item._id, item.po_number)}>
+              <Ionicons name="trash" size={20} color="#f44336" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
       
