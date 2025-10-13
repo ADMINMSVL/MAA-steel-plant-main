@@ -224,11 +224,11 @@ backend:
 
   - task: "Delete Functionality - Purchase Orders"
     implemented: true
-    working: "NA"
+    working: true
     file: "backend/server.py, frontend/app/orders/purchase.tsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: false
         agent: "user"
@@ -239,6 +239,9 @@ backend:
       - working: "NA"
         agent: "main"
         comment: "Implementation complete: Added canDelete check (user?.role === 'admin' || user?.role === 'manager'). Delete button now wrapped in conditional {canDelete && ...}. Ready for testing."
+      - working: true
+        agent: "testing"
+        comment: "✅ DELETE /api/purchase-order/{order_id} working correctly. Successfully created test purchase order (ID: 68ecdcd445cd21e04973fd72), deleted it with 200 response 'Purchase order deleted successfully', and verified removal from database (404 on subsequent GET). Backend delete functionality fully operational."
 
   - task: "Delete Functionality - Sales Orders"
     implemented: true
