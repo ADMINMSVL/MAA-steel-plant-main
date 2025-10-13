@@ -253,6 +253,8 @@ async def register_user(user: UserCreate):
         raise HTTPException(status_code=400, detail="Username already exists")
     
     user_dict = user.dict()
+    # Hash the PIN before storing
+    user_dict['pin'] = hash_password(user_dict['pin'])
     user_obj = User(**user_dict)
     result = await db.users.insert_one(user_obj.dict())
     
