@@ -11,7 +11,7 @@ from datetime import datetime
 import sys
 
 # Base URL from frontend environment
-BASE_URL = "https://plantflow.preview.emergentagent.com/api"
+BASE_URL = "https://plantproc-mobile.preview.emergentagent.com/api"
 
 # Test data
 TEST_USER = {
