@@ -240,7 +240,7 @@ test_plan:
 
   - task: "Delete Functionality - Purchase Orders"
     implemented: true
-    working: false
+    working: "NA"
     file: "backend/server.py, frontend/app/orders/purchase.tsx"
     stuck_count: 0
     priority: "high"
@@ -252,6 +252,9 @@ test_plan:
       - working: "NA"
         agent: "main"
         comment: "Investigation complete: DELETE endpoint exists in backend (line 326-331), frontend has delete button in orders/purchase.tsx. Issue: No role-based access control."
+      - working: "NA"
+        agent: "main"
+        comment: "Implementation complete: Added canDelete check (user?.role === 'admin' || user?.role === 'manager'). Delete button now wrapped in conditional {canDelete && ...}. Ready for testing."
 
   - task: "Delete Functionality - Sales Orders"
     implemented: true
