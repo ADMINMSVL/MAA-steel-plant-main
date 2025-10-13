@@ -100,12 +100,14 @@ export default function GateEntryList() {
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
             <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
           </View>
-          <TouchableOpacity
-            onPress={() => handleDelete(item._id, item.vehicle_number)}
-            style={styles.deleteButton}
-          >
-            <Ionicons name="trash" size={20} color="#f44336" />
-          </TouchableOpacity>
+          {canDelete && (
+            <TouchableOpacity
+              onPress={() => handleDelete(item._id, item.vehicle_number)}
+              style={styles.deleteButton}
+            >
+              <Ionicons name="trash" size={20} color="#f44336" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
