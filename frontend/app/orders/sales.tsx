@@ -129,8 +129,15 @@ export default function SalesOrders() {
     <View style={styles.orderCard}>
       <View style={styles.orderHeader}>
         <Text style={styles.soNumber}>{item.so_number}</Text>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-          <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
+        <View style={styles.orderHeaderRight}>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+            <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
+          </View>
+          {canDelete && (
+            <TouchableOpacity onPress={() => handleDelete(item._id, item.so_number)}>
+              <Ionicons name="trash" size={20} color="#f44336" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
       
