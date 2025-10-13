@@ -90,6 +90,32 @@ export default function SalesOrders() {
     setRate('');
   };
 
+  const handleDelete = async (id: string, soNumber: string) => {
+    Alert.alert(
+      'Delete Sales Order',
+      `Are you sure you want to delete ${soNumber}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await fetch(`${BACKEND_URL}/api/sales-order/${id}`, {
+                method: 'DELETE',
+              });
+              if (!response.ok) throw new Error('Failed to delete');
+              Alert.alert('Success', 'Sales order deleted successfully');
+              fetchOrders();
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete sales order');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return '#ff9800';
