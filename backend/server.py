@@ -341,6 +341,13 @@ async def delete_sales_order(order_id: str):
 
 # OCR function removed - Manual weight entry only
 
+@api_router.delete("/weighbridge/{weighbridge_id}")
+async def delete_weighbridge(weighbridge_id: str):
+    result = await db.weighbridge.delete_one({"_id": ObjectId(weighbridge_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Weighbridge record not found")
+    return {"message": "Weighbridge record deleted successfully"}
+
 @api_router.post("/weighbridge")
 async def create_weighbridge_entry(weighbridge: WeighbridgeCreate):
     weighbridge_dict = weighbridge.dict()
