@@ -72,7 +72,94 @@ export default function AdminScreen() {
     fetchAllData();
   };
 
-  const handleDelete = async (type: string, id: string, name: string) => {
+  const handleClearAll = async () => {
+    const totalEntries = gateEntries.length + purchaseOrders.length + salesOrders.length + 
+                        weighbridgeRecords.length + qualityInspections.length;
+    
+    if (totalEntries === 0) {
+      if (Platform.OS === 'web') {
+        alert('No data to clear');
+      } else {
+        Alert.alert('Info', 'No data to clear');
+      }
+      return;
+    }
+
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(
+        `⚠️ DANGER: This will permanently delete ALL ${totalEntries} entries!\n\n` +
+        `• ${gateEntries.length} Gate Entries\n` +
+        `• ${purchaseOrders.length} Purchase Orders\n` +
+        `• ${salesOrders.length} Sales Orders\n` +
+        `• ${weighbridgeRecords.length} Weighbridge Records\n` +
+        `• ${qualityInspections.length} Quality Inspections\n\n` +
+        `This action CANNOT be undone!\n\nAre you absolutely sure?`
+      );
+      
+      if (!confirmed) return;
+
+      const secondConfirm = window.confirm('Final confirmation: Delete ALL data?');
+      if (!secondConfirm) return;
+
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/admin/clear-all`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) throw new Error('Failed to clear data');
+        
+        alert('All data cleared successfully');
+        fetchAllData();
+      } catch (error) {
+        alert('Failed to clear data');
+      }
+    } else {
+      Alert.alert(
+        '⚠️ Clear All Data',
+        `This will permanently delete ALL ${totalEntries} entries!\n\n` +
+        `• ${gateEntries.length} Gate Entries\n` +
+        `• ${purchaseOrders.length} Purchase Orders\n` +
+        `• ${salesOrders.length} Sales Orders\n` +
+        `• ${weighbridgeRecords.length} Weighbridge Records\n` +
+        `• ${qualityInspections.length} Quality Inspections\n\n` +
+        `This action CANNOT be undone!`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete All',
+            style: 'destructive',
+            onPress: () => {
+              Alert.alert(
+                'Final Confirmation',
+                'Are you absolutely sure? This cannot be undone!',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Yes, Delete All',
+                    style: 'destructive',
+                    onPress: async () => {
+                      try {
+                        const response = await fetch(`${BACKEND_URL}/api/admin/clear-all`, {
+                          method: 'DELETE',
+                        });
+
+                        if (!response.ok) throw new Error('Failed to clear data');
+                        
+                        Alert.alert('Success', 'All data cleared successfully');
+                        fetchAllData();
+                      } catch (error) {
+                        Alert.alert('Error', 'Failed to clear data');
+                      }
+                    },
+                  },
+                ]
+              );
+            },
+          },
+        ]
+      );
+    }
+  };
     // Use window.confirm for web compatibility
     if (Platform.OS === 'web') {
       const confirmed = window.confirm(`Are you sure you want to delete ${name}? This action cannot be undone.`);
