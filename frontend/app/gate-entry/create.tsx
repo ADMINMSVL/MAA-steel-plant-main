@@ -211,9 +211,13 @@ export default function CreateGateEntry() {
             onPress={handleSubmit}
             disabled={loading}
           >
-            <Ionicons name="checkmark-circle" size={24} color="#ffffff" />
+            {loading ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Ionicons name="checkmark-circle" size={24} color="#ffffff" />
+            )}
             <Text style={styles.submitButtonText}>
-              {loading ? 'Creating...' : 'Create Entry'}
+              {loading ? 'Creating Entry...' : 'Create Entry'}
             </Text>
           </TouchableOpacity>
         </View>
