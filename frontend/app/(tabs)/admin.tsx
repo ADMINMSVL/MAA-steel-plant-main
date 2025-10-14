@@ -72,37 +72,63 @@ export default function AdminScreen() {
   };
 
   const handleDelete = async (type: string, id: string, name: string) => {
-    Alert.alert(
-      'Delete Entry',
-      `Are you sure you want to delete ${name}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const endpoint = type === 'gate' ? 'gate-entry' :
-                               type === 'po' ? 'purchase-order' :
-                               type === 'so' ? 'sales-order' :
-                               type === 'wb' ? 'weighbridge' :
-                               'quality-inspection';
+    // Use window.confirm for web compatibility
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(`Are you sure you want to delete ${name}? This action cannot be undone.`);
+      if (!confirmed) return;
+      
+      try {
+        const endpoint = type === 'gate' ? 'gate-entry' :
+                         type === 'po' ? 'purchase-order' :
+                         type === 'so' ? 'sales-order' :
+                         type === 'wb' ? 'weighbridge' :
+                         'quality-inspection';
 
-              const response = await fetch(`${BACKEND_URL}/api/${endpoint}/${id}`, {
-                method: 'DELETE',
-              });
+        const response = await fetch(`${BACKEND_URL}/api/${endpoint}/${id}`, {
+          method: 'DELETE',
+        });
 
-              if (!response.ok) throw new Error('Failed to delete');
-              
-              Alert.alert('Success', 'Entry deleted successfully');
-              fetchAllData();
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete entry');
-            }
+        if (!response.ok) throw new Error('Failed to delete');
+        
+        alert('Entry deleted successfully');
+        fetchAllData();
+      } catch (error) {
+        alert('Failed to delete entry');
+      }
+    } else {
+      // Native Alert for mobile
+      Alert.alert(
+        'Delete Entry',
+        `Are you sure you want to delete ${name}?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                const endpoint = type === 'gate' ? 'gate-entry' :
+                                 type === 'po' ? 'purchase-order' :
+                                 type === 'so' ? 'sales-order' :
+                                 type === 'wb' ? 'weighbridge' :
+                                 'quality-inspection';
+
+                const response = await fetch(`${BACKEND_URL}/api/${endpoint}/${id}`, {
+                  method: 'DELETE',
+                });
+
+                if (!response.ok) throw new Error('Failed to delete');
+                
+                Alert.alert('Success', 'Entry deleted successfully');
+                fetchAllData();
+              } catch (error) {
+                Alert.alert('Error', 'Failed to delete entry');
+              }
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   if (!isAdmin) {
