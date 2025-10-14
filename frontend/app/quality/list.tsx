@@ -1,0 +1,417 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
+  Platform,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { format } from 'date-fns';
+import { useAuth } from '../../contexts/AuthContext';
+
+export default function QualityInspectionList() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const [inspections, setInspections] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [expandedId, setExpandedId] = useState(null);
+
+  const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+
+  useEffect(() => {
+    fetchInspections();
+  }, []);
+
+  const fetchInspections = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/quality-inspection`);
+      const data = await response.json();
+      setInspections(data);
+    } catch (error) {
+      console.error('Error fetching inspections:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchInspections();
+  };
+
+  const toggleExpand = (id) => {
+    setExpandedId(expandedId === id ? null : id);
+  };
+
+  const getStatusColor = (status) => {
+    switch (status.toLowerCase()) {
+      case 'approved':
+        return '#4caf50';
+      case 'rejected':
+        return '#f44336';
+      case 'conditional':
+        return '#ff9800';
+      default:
+        return '#9e9e9e';
+    }
+  };
+
+  const renderCategoryDetail = (categoryName, categoryData) => {
+    if (!categoryData || !categoryData.weight) return null;
+
+    return (
+      <View style={styles.categoryRow} key={categoryName}>
+        <View style={styles.categoryInfo}>
+          <Text style={styles.categoryName}>{categoryName.replace('_', ' ').toUpperCase()}</Text>
+          <Text style={styles.categoryWeight}>{categoryData.weight} kg</Text>
+        </View>
+        <View style={styles.categoryPricing}>
+          <Text style={styles.categoryRate}>₹{categoryData.rate}/kg</Text>
+          <Text style={styles.categoryAmount}>₹{(categoryData.weight * categoryData.rate).toFixed(2)}</Text>
+        </View>
+        {categoryData.dust > 0 && (
+          <Text style={styles.dustInfo}>Dust: {categoryData.dust} kg</Text>
+        )}
+        {categoryData.product_name && (
+          <Text style={styles.productInfo}>Product: {categoryData.product_name}</Text>
+        )}
+      </View>
+    );
+  };
+
+  const renderInspection = (item) => {
+    const isExpanded = expandedId === item._id;
+    const categories = ['colour_tin', 'tin', 'light', 'kabadi', 'selected', 'p2p', 'mill_heavy', 'cast_iron', 'tourning', 'others'];
+
+    return (
+      <View key={item._id} style={styles.card}>
+        <TouchableOpacity
+          style={styles.cardHeader}
+          onPress={() => toggleExpand(item._id)}
+        >
+          <View style={styles.headerLeft}>
+            <Ionicons name="clipboard" size={24} color="#d32f2f" />
+            <View style={styles.headerInfo}>
+              <Text style={styles.inspectionId}>QI-{item._id?.slice(-6)}</Text>
+              <Text style={styles.inspectionDate}>
+                {format(new Date(item.inspection_date), 'dd MMM yyyy, hh:mm a')}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.headerRight}>
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+              <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
+            </View>
+            <Ionicons 
+              name={isExpanded ? "chevron-up" : "chevron-down"} 
+              size={24} 
+              color="#263238" 
+            />
+          </View>
+        </TouchableOpacity>
+
+        <View style={styles.cardSummary}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Total Weight:</Text>
+            <Text style={styles.summaryValue}>{item.total_weight || 0} kg</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Total Amount:</Text>
+            <Text style={styles.summaryValue}>₹{item.total_amount?.toFixed(2) || 0}</Text>
+          </View>
+        </View>
+
+        {isExpanded && (
+          <View style={styles.detailsSection}>
+            <Text style={styles.sectionTitle}>Quality Breakdown:</Text>
+            <View style={styles.categoriesContainer}>
+              {categories.map(cat => renderCategoryDetail(cat, item[cat]))}
+            </View>
+
+            {item.remarks && (
+              <View style={styles.remarksSection}>
+                <Text style={styles.sectionTitle}>Remarks:</Text>
+                <Text style={styles.remarksText}>{item.remarks}</Text>
+              </View>
+            )}
+
+            {item.unloading_bay && (
+              <View style={styles.infoRow}>
+                <Ionicons name="location" size={16} color="#666" />
+                <Text style={styles.infoText}>Bay: {item.unloading_bay}</Text>
+              </View>
+            )}
+
+            <View style={styles.infoRow}>
+              <Ionicons name="person" size={16} color="#666" />
+              <Text style={styles.infoText}>Inspector ID: {item.inspector_id}</Text>
+            </View>
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#d32f2f" />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#ffffff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Quality Inspections</Text>
+        <TouchableOpacity onPress={() => router.push('/quality/create')} style={styles.addButton}>
+          <Ionicons name="add" size={24} color="#ffffff" />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView
+        style={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        {inspections.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="clipboard-outline" size={64} color="#ccc" />
+            <Text style={styles.emptyText}>No quality inspections yet</Text>
+            <TouchableOpacity
+              style={styles.createButton}
+              onPress={() => router.push('/quality/create')}
+            >
+              <Text style={styles.createButtonText}>Create Inspection</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.listContainer}>
+            {inspections.map(item => renderInspection(item))}
+          </View>
+        )}
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  header: {
+    backgroundColor: '#d32f2f',
+    padding: 16,
+    paddingTop: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    flex: 1,
+    marginLeft: 16,
+  },
+  addButton: {
+    padding: 8,
+  },
+  content: {
+    flex: 1,
+  },
+  listContainer: {
+    padding: 16,
+  },
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    overflow: 'hidden',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  headerInfo: {
+    marginLeft: 12,
+  },
+  inspectionId: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#263238',
+  },
+  inspectionDate: {
+    fontSize: 12,
+    color: '#78909c',
+    marginTop: 4,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  statusText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  cardSummary: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    padding: 16,
+    backgroundColor: '#f9f9f9',
+  },
+  summaryItem: {
+    alignItems: 'center',
+  },
+  summaryLabel: {
+    fontSize: 12,
+    color: '#78909c',
+    marginBottom: 4,
+  },
+  summaryValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#263238',
+  },
+  detailsSection: {
+    padding: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#263238',
+    marginBottom: 12,
+  },
+  categoriesContainer: {
+    gap: 12,
+  },
+  categoryRow: {
+    backgroundColor: '#f5f5f5',
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#d32f2f',
+  },
+  categoryInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  categoryName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#263238',
+  },
+  categoryWeight: {
+    fontSize: 14,
+    color: '#78909c',
+  },
+  categoryPricing: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  categoryRate: {
+    fontSize: 13,
+    color: '#666',
+  },
+  categoryAmount: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#4caf50',
+  },
+  dustInfo: {
+    fontSize: 12,
+    color: '#ff9800',
+    marginTop: 4,
+  },
+  productInfo: {
+    fontSize: 12,
+    color: '#2196f3',
+    marginTop: 2,
+  },
+  remarksSection: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#fff3e0',
+    borderRadius: 8,
+  },
+  remarksText: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 8,
+  },
+  infoText: {
+    fontSize: 13,
+    color: '#666',
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+    marginTop: 64,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#999',
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  createButton: {
+    backgroundColor: '#d32f2f',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  createButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});
