@@ -65,29 +65,45 @@ export default function GateEntryList() {
   };
 
   const handleDelete = async (id: string, vehicleNumber: string) => {
-    Alert.alert(
-      'Delete Entry',
-      `Are you sure you want to delete ${vehicleNumber}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const response = await fetch(`${BACKEND_URL}/api/gate-entry/${id}`, {
-                method: 'DELETE',
-              });
-              if (!response.ok) throw new Error('Failed to delete');
-              Alert.alert('Success', 'Entry deleted successfully');
-              fetchEntries();
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete entry');
-            }
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(`Are you sure you want to delete ${vehicleNumber}? This action cannot be undone.`);
+      if (!confirmed) return;
+      
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/gate-entry/${id}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('Failed to delete');
+        alert('Entry deleted successfully');
+        fetchEntries();
+      } catch (error) {
+        alert('Failed to delete entry');
+      }
+    } else {
+      Alert.alert(
+        'Delete Entry',
+        `Are you sure you want to delete ${vehicleNumber}?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                const response = await fetch(`${BACKEND_URL}/api/gate-entry/${id}`, {
+                  method: 'DELETE',
+                });
+                if (!response.ok) throw new Error('Failed to delete');
+                Alert.alert('Success', 'Entry deleted successfully');
+                fetchEntries();
+              } catch (error) {
+                Alert.alert('Error', 'Failed to delete entry');
+              }
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const renderEntry = ({ item }: any) => (
