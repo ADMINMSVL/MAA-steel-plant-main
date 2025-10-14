@@ -296,6 +296,14 @@ export default function AdminScreen() {
           </Text>
         </View>
 
+        <TouchableOpacity 
+          style={styles.clearAllButton}
+          onPress={handleClearAll}
+        >
+          <Ionicons name="trash-bin" size={24} color="#ffffff" />
+          <Text style={styles.clearAllButtonText}>Clear All Logs</Text>
+        </TouchableOpacity>
+
         {renderDataSection('Gate Entries', gateEntries, 'gate', 'enter')}
         {renderDataSection('Purchase Orders', purchaseOrders, 'po', 'cart')}
         {renderDataSection('Sales Orders', salesOrders, 'so', 'cash')}
