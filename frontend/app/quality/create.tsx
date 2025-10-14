@@ -42,15 +42,17 @@ export default function CreateQualityCheck() {
 
   const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
-  // Price differences based on P2P
+  // Price differences based on P2P (in rupees, not paise)
   const priceConfig: Record<string, { name: string; difference: number; color: string }> = {
-    colour_tin: { name: 'Colour Tin', difference: -12500, color: '#e91e63' },
-    tin: { name: 'Tin', difference: -7000, color: '#9c27b0' },
-    light: { name: 'Light', difference: -6000, color: '#2196f3' },
-    kabadi: { name: 'Kabadi', difference: -2500, color: '#00bcd4' },
-    selected: { name: 'Selected', difference: -1000, color: '#4caf50' },
+    colour_tin: { name: 'Colour Tin', difference: -12.5, color: '#e91e63' },
+    tin: { name: 'Tin', difference: -7, color: '#9c27b0' },
+    light: { name: 'Light', difference: -6, color: '#2196f3' },
+    kabadi: { name: 'Kabadi', difference: -2.5, color: '#00bcd4' },
+    selected: { name: 'Selected', difference: -1, color: '#4caf50' },
     p2p: { name: 'P2P', difference: 0, color: '#ff9800' },
-    mill_heavy: { name: 'Mill Heavy', difference: 1000, color: '#795548' },
+    mill_heavy: { name: 'Mill Heavy', difference: 1, color: '#795548' },
+    cast_iron: { name: 'Cast Iron', difference: -1, color: '#455a64' },
+    tourning: { name: 'Tourning', difference: 0, color: '#78909c' },
     others: { name: 'Others', difference: 0, color: '#607d8b' },
   };
 
