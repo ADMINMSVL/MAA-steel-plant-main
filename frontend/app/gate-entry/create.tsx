@@ -50,6 +50,11 @@ export default function CreateGateEntry() {
       return;
     }
 
+    // Prevent multiple submissions
+    if (loading) {
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await fetch(`${BACKEND_URL}/api/gate-entry`, {
@@ -72,25 +77,26 @@ export default function CreateGateEntry() {
       }
 
       const data = await response.json();
-      Alert.alert('Success', 'Gate entry created successfully', [
-        {
-          text: 'View Entries',
-          onPress: () => router.push('/gate-entry/list'),
-        },
-        {
-          text: 'Create Another',
-          onPress: () => {
-            setVehicleNumber('');
-            setDriverName('');
-            setDriverPhone('');
-            setMaterialType('');
-            setSupplier('');
-          },
-        },
-      ]);
+      
+      // Show success message and auto-redirect
+      Alert.alert(
+        'Success', 
+        `Gate entry created for ${vehicleNumber}`,
+        [
+          {
+            text: 'OK',
+            onPress: () => router.push('/gate-entry/list'),
+          }
+        ]
+      );
+      
+      // Auto-redirect after 1 second even if user doesn't press OK
+      setTimeout(() => {
+        router.push('/gate-entry/list');
+      }, 1500);
+      
     } catch (error) {
-      Alert.alert('Error', 'Failed to create gate entry');
-    } finally {
+      Alert.alert('Error', 'Failed to create gate entry. Please try again.');
       setLoading(false);
     }
   };
