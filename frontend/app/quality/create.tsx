@@ -144,12 +144,25 @@ export default function CreateQualityCheck() {
 
   const handleSubmit = async () => {
     if (!selectedEntry) {
-      Alert.alert('Error', 'Please select a gate entry');
+      if (Platform.OS === 'web') {
+        alert('Please select a gate entry');
+      } else {
+        Alert.alert('Error', 'Please select a gate entry');
+      }
       return;
     }
 
     if (productEntries.length === 0) {
-      Alert.alert('Error', 'Please add at least one product entry');
+      if (Platform.OS === 'web') {
+        alert('Please add at least one product entry');
+      } else {
+        Alert.alert('Error', 'Please add at least one product entry');
+      }
+      return;
+    }
+
+    // Prevent multiple submissions
+    if (loading) {
       return;
     }
 
@@ -193,19 +206,28 @@ export default function CreateQualityCheck() {
       const data = await response.json();
       const { totalWeight, totalDust, totalAmount } = calculateTotals();
       
-      Alert.alert(
-        'Success',
-        `Quality inspection completed!\nTotal Weight: ${totalWeight} kg\nTotal Dust: ${totalDust} kg\nTotal Amount: ₹${totalAmount.toFixed(2)}`,
-        [
-          {
-            text: 'Done',
-            onPress: () => router.back(),
-          },
-        ]
-      );
+      if (Platform.OS === 'web') {
+        alert(`Quality inspection completed!\nTotal Weight: ${totalWeight} kg\nTotal Dust: ${totalDust} kg\nTotal Amount: ₹${totalAmount.toFixed(2)}`);
+        router.push('/quality/list');
+      } else {
+        Alert.alert(
+          'Success',
+          `Quality inspection completed!\nTotal Weight: ${totalWeight} kg\nTotal Dust: ${totalDust} kg\nTotal Amount: ₹${totalAmount.toFixed(2)}`,
+          [
+            {
+              text: 'Done',
+              onPress: () => router.push('/quality/list'),
+            },
+          ]
+        );
+      }
     } catch (error) {
-      Alert.alert('Error', 'Failed to create quality inspection');
-    } finally {
+      console.error('Quality inspection error:', error);
+      if (Platform.OS === 'web') {
+        alert('Failed to create quality inspection. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to create quality inspection');
+      }
       setLoading(false);
     }
   };
