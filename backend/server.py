@@ -125,6 +125,8 @@ class QualityInspection(BaseModel):
     selected: Optional[QualityCategory] = None
     p2p: Optional[QualityCategory] = None
     mill_heavy: Optional[QualityCategory] = None
+    cast_iron: Optional[QualityCategory] = None
+    tourning: Optional[QualityCategory] = None
     others: Optional[QualityCategory] = None
     total_weight: Optional[float] = None
     total_amount: Optional[float] = None
@@ -143,6 +145,8 @@ class QualityInspectionCreate(BaseModel):
     selected: Optional[Dict[str, float]] = None
     p2p: Optional[Dict[str, float]] = None
     mill_heavy: Optional[Dict[str, float]] = None
+    cast_iron: Optional[Dict[str, float]] = None
+    tourning: Optional[Dict[str, float]] = None
     others: Optional[Dict[str, float]] = None
     remarks: Optional[str] = None
     status: str
