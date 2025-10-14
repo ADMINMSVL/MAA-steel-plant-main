@@ -340,6 +340,26 @@ async def delete_gate_entry(entry_id: str):
         raise HTTPException(status_code=404, detail="Entry not found")
     return {"message": "Gate entry deleted successfully"}
 
+@api_router.delete("/gate-entry/vehicle/{vehicle_number}/duplicates")
+async def delete_duplicate_entries(vehicle_number: str):
+    """Delete duplicate gate entries for a vehicle, keeping only the latest one"""
+    entries = await db.gate_entries.find({"vehicle_number": vehicle_number}).sort("entry_date", -1).to_list(1000)
+    
+    if len(entries) <= 1:
+        return {"message": "No duplicates found", "deleted_count": 0}
+    
+    # Keep the first (latest) entry, delete the rest
+    entries_to_delete = entries[1:]
+    delete_ids = [entry['_id'] for entry in entries_to_delete]
+    
+    result = await db.gate_entries.delete_many({"_id": {"$in": delete_ids}})
+    
+    return {
+        "message": f"Deleted {result.deleted_count} duplicate entries",
+        "deleted_count": result.deleted_count,
+        "kept_entry_id": str(entries[0]['_id'])
+    }
+
 @api_router.delete("/purchase-order/{order_id}")
 async def delete_purchase_order(order_id: str):
     result = await db.purchase_orders.delete_one({"_id": ObjectId(order_id)})
