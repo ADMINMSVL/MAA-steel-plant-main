@@ -160,6 +160,8 @@ export default function AdminScreen() {
       );
     }
   };
+
+  const handleDelete = async (type: string, id: string, name: string) => {
     // Use window.confirm for web compatibility
     if (Platform.OS === 'web') {
       const confirmed = window.confirm(`Are you sure you want to delete ${name}? This action cannot be undone.`);
