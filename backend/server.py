@@ -468,7 +468,7 @@ async def create_quality_inspection(inspection: QualityInspectionCreate):
     total_weight = 0
     total_amount = 0
     
-    categories = ['colour_tin', 'tin', 'light', 'kabadi', 'selected', 'p2p', 'mill_heavy', 'others']
+    categories = ['colour_tin', 'tin', 'light', 'kabadi', 'selected', 'p2p', 'mill_heavy', 'cast_iron', 'tourning', 'others']
     for cat in categories:
         if inspection_dict.get(cat):
             weight = inspection_dict[cat].get('weight', 0) or 0
