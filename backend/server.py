@@ -482,11 +482,16 @@ async def create_quality_inspection(inspection: QualityInspectionCreate):
     inspection_obj = QualityInspection(**inspection_dict)
     result = await db.quality_inspections.insert_one(inspection_obj.dict())
     
-    # Update gate entry status
-    await db.gate_entries.update_one(
-        {"_id": ObjectId(inspection.gate_entry_id)},
-        {"$set": {"status": "inspected"}}
-    )
+    # Update gate entry status (with validation)
+    try:
+        if inspection.gate_entry_id:
+            await db.gate_entries.update_one(
+                {"_id": ObjectId(inspection.gate_entry_id)},
+                {"$set": {"status": "inspected"}}
+            )
+    except Exception as e:
+        # Log error but don't fail the inspection creation
+        print(f"Warning: Could not update gate entry status: {e}")
     
     return {
         "message": "Quality inspection created successfully",
