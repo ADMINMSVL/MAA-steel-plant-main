@@ -671,6 +671,45 @@ async def get_dashboard_stats():
         "average_yield": round(avg_yield, 2)
     }
 
+# ===== ADMIN ROUTES =====
+
+@api_router.delete("/admin/clear-all")
+async def clear_all_data():
+    """
+    Clear all data from all collections (DANGEROUS!)
+    This will delete all gate entries, orders, weighbridge, and quality records
+    """
+    try:
+        # Count before deletion
+        gate_count = await db.gate_entries.count_documents({})
+        po_count = await db.purchase_orders.count_documents({})
+        so_count = await db.sales_orders.count_documents({})
+        wb_count = await db.weighbridge.count_documents({})
+        qi_count = await db.quality_inspections.count_documents({})
+        
+        # Delete all entries from all collections (except users)
+        await db.gate_entries.delete_many({})
+        await db.purchase_orders.delete_many({})
+        await db.sales_orders.delete_many({})
+        await db.weighbridge.delete_many({})
+        await db.quality_inspections.delete_many({})
+        
+        total_deleted = gate_count + po_count + so_count + wb_count + qi_count
+        
+        return {
+            "message": "All data cleared successfully",
+            "deleted": {
+                "gate_entries": gate_count,
+                "purchase_orders": po_count,
+                "sales_orders": so_count,
+                "weighbridge": wb_count,
+                "quality_inspections": qi_count,
+                "total": total_deleted
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to clear data: {str(e)}")
+
 # Include the router in the main app
 app.include_router(api_router)
 
