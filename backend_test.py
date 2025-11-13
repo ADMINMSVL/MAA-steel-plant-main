@@ -1,27 +1,16 @@
 #!/usr/bin/env python3
 """
-Backend API Testing for Steel Plant Processing App
-Tests authentication, dashboard, gate entry, and weighbridge APIs
+Steel Plant App - Complete Phase 1 Workflow Test
+Tests the end-to-end workflow: PO -> Gate Entry -> Weighbridge -> Quality Inspection -> Reports
 """
 
 import requests
 import json
-import base64
 from datetime import datetime
 import sys
 
-# Base URL from frontend environment
+# Backend URL from frontend/.env
 BASE_URL = "https://plantproc-mobile.preview.emergentagent.com/api"
-
-# Test data
-TEST_USER = {
-    "username": "test_operator",
-    "pin": "1234", 
-    "role": "gate_operator"
-}
-
-# Small test image in base64 (1x1 pixel PNG)
-TEST_IMAGE_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
 
 def print_test_result(test_name, success, message="", response_data=None):
     """Print formatted test results"""
