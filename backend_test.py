@@ -266,14 +266,14 @@ class SteelPlantWorkflowTest:
         success_count = 0
         total_tests = 2
         
-        # Test 1: Verify Gate Entry status updated to "weighed"
+        # Test 1: Verify Gate Entry status updated correctly (should be "inspected" after quality inspection)
         if "gate_entry_id" in self.test_data:
             gate_entry = self.test_api_endpoint("GET", f"/gate-entry/{self.test_data['gate_entry_id']}")
-            if gate_entry and gate_entry.get("status") == "weighed":
-                self.log("✅ Gate Entry status updated to 'weighed' after weighbridge")
+            if gate_entry and gate_entry.get("status") == "inspected":
+                self.log("✅ Gate Entry status updated to 'inspected' after quality inspection")
                 success_count += 1
             else:
-                self.log(f"❌ Gate Entry status not updated. Current: {gate_entry.get('status') if gate_entry else 'N/A'}", "ERROR")
+                self.log(f"❌ Gate Entry status not updated correctly. Current: {gate_entry.get('status') if gate_entry else 'N/A'}", "ERROR")
         
         # Test 2: Verify Weighbridge linked to correct Gate Entry
         if "weighbridge_id" in self.test_data:
