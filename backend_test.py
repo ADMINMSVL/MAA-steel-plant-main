@@ -53,7 +53,12 @@ class SteelPlantWorkflowTest:
                 
             try:
                 response_data = response.json()
-                self.log(f"✅ Success: {response_data.get('message', 'OK')}")
+                if isinstance(response_data, dict):
+                    self.log(f"✅ Success: {response_data.get('message', 'OK')}")
+                elif isinstance(response_data, list):
+                    self.log(f"✅ Success: Retrieved {len(response_data)} items")
+                else:
+                    self.log(f"✅ Success: {response_data}")
                 return response_data
             except json.JSONDecodeError:
                 self.log(f"✅ Success (no JSON response)")
