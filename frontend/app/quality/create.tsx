@@ -199,11 +199,12 @@ export default function CreateQualityCheck() {
             weight: 0,
             rate: parseFloat(entry.rate) || 0,
             dust: 0,
-            product_name: entry.category === 'others' ? entry.productName : null,
+            product_name: entry.category === 'others' ? (entry.productName || null) : null,
           };
         }
         groupedData[entry.category].weight += parseFloat(entry.weight) || 0;
-        groupedData[entry.category].dust += parseFloat(entry.dust) || 0;
+        groupedData[entry.category].dust += parseFloat(entry.dust || '0') || 0;
+        groupedData[entry.category].rate = parseFloat(entry.rate) || 0; // Ensure rate is set
       });
 
       const qualityData: any = {
