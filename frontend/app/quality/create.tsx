@@ -293,7 +293,7 @@ export default function CreateQualityCheck() {
                     styles.entryCard,
                     selectedEntry?._id === entry._id && styles.entryCardSelected,
                   ]}
-                  onPress={() => setSelectedEntry(entry)}
+                  onPress={() => handleGateEntrySelect(entry)}
                 >
                   <View style={styles.entryCardLeft}>
                     <Text style={styles.vehicleText}>{entry.vehicle_number}</Text>
@@ -304,6 +304,16 @@ export default function CreateQualityCheck() {
                   )}
                 </TouchableOpacity>
               ))}
+            </View>
+          )}
+
+          {/* Weighbridge Weight Display */}
+          {weighbridgeWeight > 0 && (
+            <View style={styles.weighbridgeInfo}>
+              <Ionicons name="scale" size={20} color="#2196f3" />
+              <Text style={styles.weighbridgeText}>
+                Weighbridge Net Weight: <Text style={styles.weighbridgeValue}>{weighbridgeWeight} kg</Text>
+              </Text>
             </View>
           )}
 
