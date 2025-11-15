@@ -30,6 +30,7 @@ export default function CreateQualityCheck() {
   const { user } = useAuth();
   const [gateEntries, setGateEntries] = useState([]);
   const [selectedEntry, setSelectedEntry] = useState<any>(null);
+  const [weighbridgeWeight, setWeighbridgeWeight] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [loadingEntries, setLoadingEntries] = useState(true);
   const [status, setStatus] = useState('approved');
