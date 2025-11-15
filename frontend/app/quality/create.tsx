@@ -466,6 +466,21 @@ export default function CreateQualityCheck() {
                   <Text style={styles.totalLabel}>Total Weight:</Text>
                   <Text style={styles.totalValue}>{totalWeight.toFixed(2)} kg</Text>
                 </View>
+                
+                {/* Balance Weight with color coding */}
+                {weighbridgeWeight > 0 && (
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>Balance Weight:</Text>
+                    <Text style={[
+                      styles.totalValue,
+                      balanceWeight < 0 ? styles.balanceNegative : 
+                      balanceWeight === 0 ? styles.balanceZero : styles.balancePositive
+                    ]}>
+                      {balanceWeight.toFixed(2)} kg
+                    </Text>
+                  </View>
+                )}
+                
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>Total Dust:</Text>
                   <Text style={styles.totalValue}>{totalDust.toFixed(2)} kg</Text>
