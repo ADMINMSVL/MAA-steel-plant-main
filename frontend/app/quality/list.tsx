@@ -24,6 +24,9 @@ export default function QualityInspectionList() {
   const [expandedId, setExpandedId] = useState(null);
 
   const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+  
+  // Check if user can share (admin/manager only)
+  const canShare = user?.role === 'admin' || user?.role === 'manager';
 
   useEffect(() => {
     fetchInspections();
