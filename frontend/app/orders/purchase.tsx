@@ -54,7 +54,11 @@ export default function PurchaseOrders() {
 
   const handleCreate = async () => {
     if (!poNumber || !vendor || !materialType || !quantity || !rate) {
-      Alert.alert('Error', 'Please fill all required fields');
+      if (Platform.OS === 'web') {
+        alert('Please fill all required fields');
+      } else {
+        Alert.alert('Error', 'Please fill all required fields');
+      }
       return;
     }
 
@@ -75,12 +79,20 @@ export default function PurchaseOrders() {
 
       if (!response.ok) throw new Error('Failed to create PO');
 
-      Alert.alert('Success', 'Purchase Order created successfully');
+      if (Platform.OS === 'web') {
+        alert('Purchase Order created successfully');
+      } else {
+        Alert.alert('Success', 'Purchase Order created successfully');
+      }
       setShowCreateModal(false);
       resetForm();
       fetchOrders();
     } catch (error) {
-      Alert.alert('Error', 'Failed to create purchase order');
+      if (Platform.OS === 'web') {
+        alert('Failed to create purchase order');
+      } else {
+        Alert.alert('Error', 'Failed to create purchase order');
+      }
     }
   };
 
