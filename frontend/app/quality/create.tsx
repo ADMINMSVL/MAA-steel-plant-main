@@ -254,7 +254,7 @@ export default function CreateQualityCheck() {
     }
   };
 
-  const { totalWeight, totalDust, totalAmount } = calculateTotals();
+  const { totalWeight, totalDust, totalAmount, balanceWeight } = calculateTotals();
 
   if (loadingEntries) {
     return (
