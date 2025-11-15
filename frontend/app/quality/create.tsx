@@ -74,6 +74,25 @@ export default function CreateQualityCheck() {
     }
   };
 
+  // Fetch weighbridge weight when gate entry is selected
+  const handleGateEntrySelect = async (entry: any) => {
+    setSelectedEntry(entry);
+    
+    // Fetch weighbridge data for this gate entry
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/weighbridge/entry/${entry._id}`);
+      const weighbridgeData = await response.json();
+      if (weighbridgeData && weighbridgeData.net_weight) {
+        setWeighbridgeWeight(weighbridgeData.net_weight);
+      } else {
+        setWeighbridgeWeight(0);
+      }
+    } catch (error) {
+      console.error('Error fetching weighbridge:', error);
+      setWeighbridgeWeight(0);
+    }
+  };
+
   const calculateRate = (category: string) => {
     const basePrice = parseFloat(p2pBasePrice) || 0;
     if (basePrice === 0) return '';
