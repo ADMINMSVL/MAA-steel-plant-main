@@ -222,7 +222,9 @@ export default function CreateQualityCheck() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create quality inspection');
+        const errorData = await response.json().catch(() => null);
+        console.error('Quality inspection error:', errorData);
+        throw new Error(errorData?.detail || 'Failed to create quality inspection');
       }
 
       const data = await response.json();
