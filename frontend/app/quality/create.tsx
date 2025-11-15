@@ -856,6 +856,37 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1b5e20',
   },
+  balancePositive: {
+    color: '#4caf50',
+  },
+  balanceZero: {
+    color: '#ff9800',
+  },
+  balanceNegative: {
+    color: '#f44336',
+    fontWeight: 'bold',
+  },
+  weighbridgeInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e3f2fd',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+    gap: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#2196f3',
+  },
+  weighbridgeText: {
+    fontSize: 15,
+    color: '#1565c0',
+    fontWeight: '600',
+  },
+  weighbridgeValue: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#0d47a1',
+  },
   statusContainer: {
     flexDirection: 'row',
     gap: 12,
