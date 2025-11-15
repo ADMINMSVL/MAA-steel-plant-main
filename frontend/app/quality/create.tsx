@@ -216,6 +216,8 @@ export default function CreateQualityCheck() {
         ...groupedData,
       };
 
+      console.log('Sending quality data:', JSON.stringify(qualityData, null, 2));
+
       const response = await fetch(`${BACKEND_URL}/api/quality-inspection`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
