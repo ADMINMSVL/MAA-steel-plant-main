@@ -226,7 +226,7 @@ export default function CreateQualityCheck() {
       }
 
       const data = await response.json();
-      const { totalWeight, totalDust, totalAmount } = calculateTotals();
+      const { totalWeight, totalDust, totalAmount, balanceWeight } = calculateTotals();
       
       if (Platform.OS === 'web') {
         alert(`Quality inspection completed!\nTotal Weight: ${totalWeight} kg\nTotal Dust: ${totalDust} kg\nTotal Amount: ₹${totalAmount.toFixed(2)}`);
