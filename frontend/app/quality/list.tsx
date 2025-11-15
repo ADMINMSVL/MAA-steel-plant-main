@@ -361,6 +361,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
   },
+  shareButton: {
+    padding: 8,
+    marginLeft: 8,
+  },
   cardSummary: {
     flexDirection: 'row',
     justifyContent: 'space-around',
