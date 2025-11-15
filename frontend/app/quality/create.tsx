@@ -159,7 +159,9 @@ export default function CreateQualityCheck() {
       totalAmount += (weight * rate);
     });
 
-    return { totalWeight, totalDust, totalAmount };
+    const balanceWeight = weighbridgeWeight - totalWeight;
+
+    return { totalWeight, totalDust, totalAmount, balanceWeight };
   };
 
   const handleSubmit = async () => {
