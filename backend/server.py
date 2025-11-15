@@ -138,16 +138,16 @@ class QualityInspection(BaseModel):
 
 class QualityInspectionCreate(BaseModel):
     gate_entry_id: str
-    colour_tin: Optional[Dict[str, float]] = None
-    tin: Optional[Dict[str, float]] = None
-    light: Optional[Dict[str, float]] = None
-    kabadi: Optional[Dict[str, float]] = None
-    selected: Optional[Dict[str, float]] = None
-    p2p: Optional[Dict[str, float]] = None
-    mill_heavy: Optional[Dict[str, float]] = None
-    cast_iron: Optional[Dict[str, float]] = None
-    tourning: Optional[Dict[str, float]] = None
-    others: Optional[Dict[str, float]] = None
+    colour_tin: Optional[QualityCategory] = None
+    tin: Optional[QualityCategory] = None
+    light: Optional[QualityCategory] = None
+    kabadi: Optional[QualityCategory] = None
+    selected: Optional[QualityCategory] = None
+    p2p: Optional[QualityCategory] = None
+    mill_heavy: Optional[QualityCategory] = None
+    cast_iron: Optional[QualityCategory] = None
+    tourning: Optional[QualityCategory] = None
+    others: Optional[QualityCategory] = None
     remarks: Optional[str] = None
     status: str
     inspector_id: str
