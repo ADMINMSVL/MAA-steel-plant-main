@@ -9,6 +9,7 @@ import {
   Alert,
   FlatList,
   Modal,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
