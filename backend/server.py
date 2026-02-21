@@ -247,6 +247,171 @@ class VoucherCreate(BaseModel):
     payment_method: str
     created_by: str
 
+# ===== PHASE 2: MELTING MODULE MODELS =====
+
+class RawMaterialCharge(BaseModel):
+    material_type: str  # scrap_heavy, scrap_light, pig_iron, ms_scrap, etc.
+    weight: float  # kg
+    rate: Optional[float] = None  # ₹/kg
+
+class MeltingHeat(BaseModel):
+    heat_number: str  # Unique heat identifier e.g. H-2024-001
+    furnace_number: int  # 1, 2, 3 etc.
+    shift: str  # morning, afternoon, night
+    start_time: datetime = Field(default_factory=datetime.utcnow)
+    end_time: Optional[datetime] = None
+    raw_materials: List[RawMaterialCharge] = []
+    total_charge_weight: float = 0  # Total input weight
+    molten_metal_weight: Optional[float] = None  # Output weight
+    yield_percentage: Optional[float] = None
+    power_consumption: Optional[float] = None  # kWh
+    temperature: Optional[float] = None  # °C
+    tap_time: Optional[datetime] = None
+    operator_id: str
+    status: str = "charging"  # charging, melting, tapped, completed
+    remarks: Optional[str] = None
+
+class MeltingHeatCreate(BaseModel):
+    heat_number: str
+    furnace_number: int
+    shift: str
+    raw_materials: List[RawMaterialCharge] = []
+    operator_id: str
+    remarks: Optional[str] = None
+
+class MeltingHeatUpdate(BaseModel):
+    molten_metal_weight: Optional[float] = None
+    power_consumption: Optional[float] = None
+    temperature: Optional[float] = None
+    status: Optional[str] = None
+    tap_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    remarks: Optional[str] = None
+
+# ===== PHASE 2: CCM (BILLET CASTING) MODULE MODELS =====
+
+class BilletProduction(BaseModel):
+    billet_batch: str  # Batch identifier
+    heat_id: str  # Link to melting heat
+    ccm_number: int  # CCM machine number
+    shift: str
+    billet_size: str  # e.g., "100x100", "130x130"
+    billet_count: int  # Number of billets
+    total_weight: float  # kg
+    length_per_billet: Optional[float] = None  # meters
+    casting_speed: Optional[float] = None  # m/min
+    casting_temperature: Optional[float] = None  # °C
+    start_time: datetime = Field(default_factory=datetime.utcnow)
+    end_time: Optional[datetime] = None
+    operator_id: str
+    status: str = "casting"  # casting, cooling, completed
+    quality_grade: Optional[str] = None  # A, B, C
+    defects: Optional[str] = None
+    remarks: Optional[str] = None
+
+class BilletProductionCreate(BaseModel):
+    billet_batch: str
+    heat_id: str
+    ccm_number: int
+    shift: str
+    billet_size: str
+    billet_count: int
+    total_weight: float
+    length_per_billet: Optional[float] = None
+    casting_speed: Optional[float] = None
+    casting_temperature: Optional[float] = None
+    operator_id: str
+    quality_grade: Optional[str] = None
+    defects: Optional[str] = None
+    remarks: Optional[str] = None
+
+# ===== PHASE 2: ROLLING MILL (TMT) MODULE MODELS =====
+
+class RollingProduction(BaseModel):
+    production_batch: str  # Production batch identifier
+    billet_batch_id: str  # Link to billet production
+    mill_number: int  # Mill number
+    shift: str
+    product_size: str  # e.g., "8mm", "10mm", "12mm", "16mm", "20mm", "25mm"
+    bundle_count: int
+    total_weight: float  # kg
+    production_rate: Optional[float] = None  # tons/hour
+    start_time: datetime = Field(default_factory=datetime.utcnow)
+    end_time: Optional[datetime] = None
+    operator_id: str
+    status: str = "rolling"  # rolling, cooling, bundling, completed
+    quality_check: Optional[str] = None  # passed, failed
+    remarks: Optional[str] = None
+
+class RollingProductionCreate(BaseModel):
+    production_batch: str
+    billet_batch_id: str
+    mill_number: int
+    shift: str
+    product_size: str
+    bundle_count: int
+    total_weight: float
+    production_rate: Optional[float] = None
+    operator_id: str
+    quality_check: Optional[str] = None
+    remarks: Optional[str] = None
+
+# ===== PHASE 2: BREAKDOWN & MAINTENANCE MODULE MODELS =====
+
+class BreakdownReport(BaseModel):
+    breakdown_id: str  # Auto-generated
+    equipment_name: str  # Furnace-1, CCM-1, Rolling Mill-1
+    equipment_type: str  # furnace, ccm, rolling_mill, utility
+    reported_by: str
+    reported_time: datetime = Field(default_factory=datetime.utcnow)
+    description: str
+    severity: str  # critical, major, minor
+    location: str  # Melting shop, CCM, Rolling mill
+    status: str = "reported"  # reported, assigned, in_progress, resolved, closed
+    assigned_to: Optional[str] = None
+    start_repair_time: Optional[datetime] = None
+    end_repair_time: Optional[datetime] = None
+    downtime_minutes: Optional[int] = None
+    root_cause: Optional[str] = None
+    action_taken: Optional[str] = None
+    spare_parts_used: Optional[str] = None
+    remarks: Optional[str] = None
+
+class BreakdownReportCreate(BaseModel):
+    equipment_name: str
+    equipment_type: str
+    reported_by: str
+    description: str
+    severity: str
+    location: str
+    remarks: Optional[str] = None
+
+class MaintenanceSchedule(BaseModel):
+    schedule_id: str
+    equipment_name: str
+    equipment_type: str
+    maintenance_type: str  # preventive, predictive, corrective
+    scheduled_date: datetime
+    frequency: str  # daily, weekly, monthly, quarterly, yearly
+    last_maintenance: Optional[datetime] = None
+    next_due: Optional[datetime] = None
+    assigned_to: Optional[str] = None
+    status: str = "scheduled"  # scheduled, in_progress, completed, overdue
+    checklist: Optional[str] = None
+    remarks: Optional[str] = None
+    created_by: str
+
+class MaintenanceScheduleCreate(BaseModel):
+    equipment_name: str
+    equipment_type: str
+    maintenance_type: str
+    scheduled_date: datetime
+    frequency: str
+    assigned_to: Optional[str] = None
+    checklist: Optional[str] = None
+    remarks: Optional[str] = None
+    created_by: str
+
 # ===== AUTHENTICATION ROUTES =====
 
 @api_router.post("/auth/register")
