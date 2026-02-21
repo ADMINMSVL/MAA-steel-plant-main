@@ -55,7 +55,14 @@ export default function Dashboard() {
     { title: 'Gate Entry', icon: 'enter', color: '#4caf50', screen: '/gate-entry/create' },
     { title: 'Weighbridge', icon: 'scale', color: '#2196f3', screen: '/weighbridge/create' },
     { title: 'Quality Check', icon: 'checkmark-circle', color: '#ff9800', screen: '/quality/create' },
-    { title: 'Material Usage', icon: 'cube', color: '#9c27b0', screen: '/material/consumption' },
+    { title: 'Reports', icon: 'document-text', color: '#9c27b0', screen: '/reports/list' },
+  ];
+
+  const manufacturingModules = [
+    { title: 'Melting Shop', icon: 'flame', color: '#ff5722', screen: '/melting', desc: 'Furnace Operations' },
+    { title: 'CCM - Billets', icon: 'cube', color: '#2196f3', screen: '/ccm', desc: 'Billet Casting' },
+    { title: 'Rolling Mill', icon: 'layers', color: '#4caf50', screen: '/rolling', desc: 'TMT Production' },
+    { title: 'Maintenance', icon: 'construct', color: '#9c27b0', screen: '/maintenance', desc: 'Breakdowns & PM' },
   ];
 
   if (loading) {
