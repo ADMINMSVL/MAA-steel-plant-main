@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   TextInput,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -34,26 +35,12 @@ export default function CreateWeighbridge() {
     fetchGateEntries();
   }, []);
 
-  useEffect(() => {
-    calculateNetWeight();
-  }, [grossWeight, tareWeight]);
-
-  const calculateNetWeight = () => {
-    const gross = parseFloat(grossWeight) || 0;
-    const tare = parseFloat(tareWeight) || 0;
-    if (gross > 0 && tare > 0) {
-      setNetWeight((gross - tare).toString());
-    } else {
-      setNetWeight('');
-    }
-  };
-
   const fetchGateEntries = async () => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/gate-entry`);
       const data = await response.json();
-      const pendingEntries = data.filter((e: any) => e.status === 'entered');
-      setGateEntries(pendingEntries);
+      const weighedEntries = data.filter((e: any) => e.status === 'entered');
+      setGateEntries(weighedEntries);
     } catch (error) {
       console.error('Error fetching entries:', error);
     } finally {
@@ -61,16 +48,38 @@ export default function CreateWeighbridge() {
     }
   };
 
+  const calculateNetWeight = () => {
+    const gross = parseFloat(grossWeight) || 0;
+    const tare = parseFloat(tareWeight) || 0;
+    setNetWeight((gross - tare).toString());
+  };
+
+  useEffect(() => {
+    if (grossWeight && tareWeight) {
+      calculateNetWeight();
+    }
+  }, [grossWeight, tareWeight]);
+
   const handleSubmit = async () => {
     if (!selectedEntry) {
-      Alert.alert('Error', 'Please select a gate entry');
+      if (Platform.OS === 'web') {
+        alert('Please select a gate entry');
+      } else {
+        Alert.alert('Error', 'Please select a gate entry');
+      }
       return;
     }
 
     if (!grossWeight || !tareWeight) {
-      Alert.alert('Error', 'Please enter Gross Weight and Tare Weight');
+      if (Platform.OS === 'web') {
+        alert('Please enter Gross Weight and Tare Weight');
+      } else {
+        Alert.alert('Error', 'Please enter Gross Weight and Tare Weight');
+      }
       return;
     }
+
+    if (loading) return;
 
     setLoading(true);
     try {
@@ -79,37 +88,32 @@ export default function CreateWeighbridge() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           gate_entry_id: selectedEntry._id,
-          weight_image: 'no-photo',
-          weight_1: weight1 ? parseFloat(weight1) : null,
-          weight_2: weight2 ? parseFloat(weight2) : null,
-          weight_3: weight3 ? parseFloat(weight3) : null,
-          weight_4: weight4 ? parseFloat(weight4) : null,
           gross_weight: parseFloat(grossWeight),
           tare_weight: parseFloat(tareWeight),
-          operator_id: user?.id || '',
+          net_weight: parseFloat(netWeight),
+          weighing_operator_id: user?.id || '',
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to create weighbridge entry');
-      }
+      if (!response.ok) throw new Error('Failed');
 
-      const data = await response.json();
-      
-      Alert.alert(
-        'Success!',
-        `Weighbridge entry created!\n\nNet Weight: ${data.net_weight || netWeight} kg${data.rate ? `\nRate: ₹${data.rate}/kg` : ''}`,
-        [
-          {
-            text: 'Done',
-            onPress: () => router.back(),
-          },
-        ]
-      );
+      if (Platform.OS === 'web') {
+        alert(`Weighbridge entry created!\nGross: ${grossWeight}kg\nTare: ${tareWeight}kg\nNet: ${netWeight}kg`);
+        router.push('/gate-entry/list');
+      } else {
+        Alert.alert(
+          'Success',
+          `Weighbridge entry created!\nGross: ${grossWeight}kg\nTare: ${tareWeight}kg\nNet: ${netWeight}kg`,
+          [{ text: 'OK', onPress: () => router.push('/gate-entry/list') }]
+        );
+      }
     } catch (error) {
-      console.error('Submit error:', error);
-      Alert.alert('Error', 'Failed to create weighbridge entry. Please try again.');
-    } finally {
+      console.error('Error:', error);
+      if (Platform.OS === 'web') {
+        alert('Failed to create weighbridge entry. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to create weighbridge entry. Please try again.');
+      }
       setLoading(false);
     }
   };
@@ -117,7 +121,7 @@ export default function CreateWeighbridge() {
   if (loadingEntries) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1e88e5" />
+        <ActivityIndicator size="large" color="#d32f2f" />
       </View>
     );
   }
@@ -128,308 +132,151 @@ export default function CreateWeighbridge() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#ffffff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Weighbridge</Text>
+        <Text style={styles.headerTitle}>Weighbridge Entry</Text>
       </View>
 
-      <View style={styles.form}>
-        <Text style={styles.label}>Select Gate Entry *</Text>
-        {gateEntries.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Ionicons name="information-circle" size={32} color="#9e9e9e" />
-            <Text style={styles.emptyText}>No pending gate entries</Text>
-          </View>
-        ) : (
-          <View style={styles.entriesContainer}>
-            {gateEntries.map((entry: any) => (
-              <TouchableOpacity
-                key={entry._id}
-                style={[
-                  styles.entryCard,
-                  selectedEntry?._id === entry._id && styles.entryCardSelected,
-                ]}
-                onPress={() => setSelectedEntry(entry)}
-              >
-                <View style={styles.entryCardLeft}>
-                  <Text style={styles.vehicleText}>{entry.vehicle_number}</Text>
-                  <Text style={styles.materialText}>{entry.material_type}</Text>
+      <View style={styles.content}>
+        <Text style={styles.sectionTitle}>Select Gate Entry</Text>
+        {gateEntries.map((entry) => (
+          <TouchableOpacity
+            key={entry._id}
+            style={[
+              styles.entryCard,
+              selectedEntry?._id === entry._id && styles.entryCardSelected,
+            ]}
+            onPress={() => setSelectedEntry(entry)}
+          >
+            <Text style={styles.vehicleText}>{entry.vehicle_number}</Text>
+            <Text style={styles.materialText}>{entry.material_type}</Text>
+            {selectedEntry?._id === entry._id && (
+              <Ionicons name="checkmark-circle" size={24} color="#d32f2f" />
+            )}
+          </TouchableOpacity>
+        ))}
+
+        {selectedEntry && (
+          <>
+            <Text style={styles.sectionTitle}>Weight Entry</Text>
+            <View style={styles.form}>
+              <Text style={styles.label}>Gross Weight (kg)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter gross weight"
+                value={grossWeight}
+                onChangeText={setGrossWeight}
+                keyboardType="numeric"
+              />
+
+              <Text style={styles.label}>Tare Weight (kg)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter tare weight"
+                value={tareWeight}
+                onChangeText={setTareWeight}
+                keyboardType="numeric"
+              />
+
+              {netWeight && (
+                <View style={styles.netWeightCard}>
+                  <Text style={styles.netWeightLabel}>Net Weight</Text>
+                  <Text style={styles.netWeightValue}>{netWeight} kg</Text>
                 </View>
-                {selectedEntry?._id === entry._id && (
-                  <Ionicons name="checkmark-circle" size={24} color="#4caf50" />
+              )}
+
+              <TouchableOpacity
+                style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+                onPress={handleSubmit}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Ionicons name="save" size={24} color="#ffffff" />
                 )}
+                <Text style={styles.submitButtonText}>
+                  {loading ? 'Saving...' : 'Save Weighbridge Entry'}
+                </Text>
               </TouchableOpacity>
-            ))}
-          </View>
+            </View>
+          </>
         )}
-
-        <View style={styles.weightSection}>
-          <Text style={styles.sectionTitle}>Weight Readings (Optional)</Text>
-          <View style={styles.weightRow}>
-            <View style={styles.weightInput}>
-              <Text style={styles.weightLabel}>Weight 1 (kg)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="0"
-                value={weight1}
-                onChangeText={setWeight1}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.weightInput}>
-              <Text style={styles.weightLabel}>Weight 2 (kg)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="0"
-                value={weight2}
-                onChangeText={setWeight2}
-                keyboardType="numeric"
-              />
-            </View>
-          </View>
-
-          <View style={styles.weightRow}>
-            <View style={styles.weightInput}>
-              <Text style={styles.weightLabel}>Weight 3 (kg)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="0"
-                value={weight3}
-                onChangeText={setWeight3}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.weightInput}>
-              <Text style={styles.weightLabel}>Weight 4 (kg)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="0"
-                value={weight4}
-                onChangeText={setWeight4}
-                keyboardType="numeric"
-              />
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.calculationSection}>
-          <Text style={styles.sectionTitle}>Weight Calculation *</Text>
-          <View style={styles.calcRow}>
-            <Text style={styles.calcLabel}>Gross Weight (kg)</Text>
-            <TextInput
-              style={styles.calcInput}
-              placeholder="Enter gross weight"
-              value={grossWeight}
-              onChangeText={setGrossWeight}
-              keyboardType="numeric"
-            />
-          </View>
-          
-          <View style={styles.calcRow}>
-            <Text style={styles.calcLabel}>Tare Weight (kg)</Text>
-            <TextInput
-              style={styles.calcInput}
-              placeholder="Enter tare weight"
-              value={tareWeight}
-              onChangeText={setTareWeight}
-              keyboardType="numeric"
-            />
-          </View>
-
-          {netWeight && (
-            <View style={styles.netWeightCard}>
-              <Ionicons name="calculator" size={32} color="#4caf50" />
-              <View>
-                <Text style={styles.netWeightLabel}>Net Weight</Text>
-                <Text style={styles.netWeightValue}>{netWeight} kg</Text>
-              </View>
-            </View>
-          )}
-        </View>
-
-        <TouchableOpacity
-          style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={loading || !selectedEntry || !grossWeight || !tareWeight}
-        >
-          <Ionicons name="checkmark-circle" size={24} color="#ffffff" />
-          <Text style={styles.submitButtonText}>
-            {loading ? 'Submitting...' : 'Submit Weighbridge Entry'}
-          </Text>
-        </TouchableOpacity>
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
-    backgroundColor: '#0d47a1',
-    padding: 24,
+    backgroundColor: '#d32f2f',
+    padding: 16,
     paddingTop: 48,
     flexDirection: 'row',
     alignItems: 'center',
   },
-  backButton: {
-    marginRight: 16,
-  },
+  backButton: { padding: 8 },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#ffffff',
+    marginLeft: 16,
   },
-  form: {
-    padding: 16,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#263238',
-    marginBottom: 12,
-  },
-  entriesContainer: {
-    gap: 12,
-    marginBottom: 24,
-  },
-  entryCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 2,
-    borderColor: '#e0e0e0',
-  },
-  entryCardSelected: {
-    borderColor: '#4caf50',
-    backgroundColor: '#e8f5e9',
-  },
-  entryCardLeft: {
-    flex: 1,
-  },
-  vehicleText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#263238',
-  },
-  materialText: {
-    fontSize: 14,
-    color: '#78909c',
-    marginTop: 4,
-  },
-  emptyCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: 32,
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#9e9e9e',
-    marginTop: 8,
-  },
-  weightSection: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
+  content: { padding: 16 },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#263238',
-    marginBottom: 16,
-  },
-  weightRow: {
-    flexDirection: 'row',
-    gap: 12,
+    marginTop: 16,
     marginBottom: 12,
   },
-  weightInput: {
-    flex: 1,
+  entryCard: {
+    backgroundColor: '#ffffff',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    elevation: 2,
   },
-  weightLabel: {
-    fontSize: 14,
-    color: '#546e7a',
-    marginBottom: 8,
+  entryCardSelected: {
+    borderWidth: 2,
+    borderColor: '#d32f2f',
   },
+  vehicleText: { fontSize: 16, fontWeight: 'bold', color: '#263238' },
+  materialText: { fontSize: 14, color: '#78909c', marginTop: 4 },
+  form: { marginTop: 8 },
+  label: { fontSize: 14, fontWeight: '600', color: '#555', marginBottom: 8 },
   input: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  calculationSection: {
-    backgroundColor: '#e3f2fd',
-    borderRadius: 12,
-    padding: 16,
     marginBottom: 16,
-  },
-  calcRow: {
-    marginBottom: 16,
-  },
-  calcLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#263238',
-    marginBottom: 8,
-  },
-  calcInput: {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: 16,
-    fontSize: 18,
-    fontWeight: 'bold',
-    borderWidth: 2,
-    borderColor: '#2196f3',
   },
   netWeightCard: {
     backgroundColor: '#e8f5e9',
-    borderRadius: 8,
     padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    marginTop: 8,
-    borderWidth: 2,
-    borderColor: '#4caf50',
-  },
-  netWeightLabel: {
-    fontSize: 14,
-    color: '#2e7d32',
-  },
-  netWeightValue: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1b5e20',
-  },
-  submitButton: {
-    backgroundColor: '#ff9800',
     borderRadius: 8,
-    padding: 18,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#4caf50',
+  },
+  netWeightLabel: { fontSize: 14, color: '#2e7d32', marginBottom: 4 },
+  netWeightValue: { fontSize: 24, fontWeight: 'bold', color: '#1b5e20' },
+  submitButton: {
+    backgroundColor: '#d32f2f',
+    padding: 16,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    marginTop: 8,
   },
-  submitButtonDisabled: {
-    backgroundColor: '#ffcc80',
-    opacity: 0.6,
-  },
-  submitButtonText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
+  submitButtonDisabled: { opacity: 0.6 },
+  submitButtonText: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
 });
