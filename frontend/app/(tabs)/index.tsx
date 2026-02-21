@@ -123,6 +123,26 @@ export default function Dashboard() {
           </TouchableOpacity>
         ))}
       </View>
+
+      <Text style={styles.sectionTitle}>Manufacturing</Text>
+      <View style={styles.modulesList}>
+        {manufacturingModules.map((module, index) => (
+          <TouchableOpacity
+            key={index}
+            style={styles.moduleCard}
+            onPress={() => router.push(module.screen as any)}
+          >
+            <View style={[styles.moduleIcon, { backgroundColor: module.color }]}>
+              <Ionicons name={module.icon as any} size={24} color="#ffffff" />
+            </View>
+            <View style={styles.moduleInfo}>
+              <Text style={styles.moduleTitle}>{module.title}</Text>
+              <Text style={styles.moduleDesc}>{module.desc}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#78909c" />
+          </TouchableOpacity>
+        ))}
+      </View>
     </ScrollView>
   );
 }
