@@ -10,7 +10,7 @@ from datetime import datetime
 import sys
 
 # Backend URL from frontend/.env
-BASE_URL = "https://plantproc-mobile.preview.emergentagent.com/api"
+BASE_URL = "https://melting-casting-mill.preview.emergentagent.com/api"
 
 class SteelPlantWorkflowTest:
     def __init__(self):
