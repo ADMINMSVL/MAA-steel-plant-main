@@ -819,6 +819,302 @@ async def get_vouchers_by_type(voucher_type: str):
     vouchers = await db.vouchers.find({"voucher_type": voucher_type}).sort("voucher_date", -1).to_list(1000)
     return [serialize_doc(voucher) for voucher in vouchers]
 
+# ===== PHASE 2: MELTING ROUTES =====
+
+@api_router.post("/melting/heat")
+async def create_melting_heat(heat: MeltingHeatCreate):
+    heat_dict = heat.dict()
+    
+    # Calculate total charge weight from raw materials
+    total_charge = sum([rm.get('weight', 0) for rm in heat_dict.get('raw_materials', [])])
+    heat_dict['total_charge_weight'] = total_charge
+    
+    heat_obj = MeltingHeat(**heat_dict)
+    result = await db.melting_heats.insert_one(heat_obj.dict())
+    
+    return {
+        "message": "Melting heat created successfully",
+        "heat_id": str(result.inserted_id),
+        "total_charge_weight": total_charge
+    }
+
+@api_router.get("/melting/heat")
+async def get_melting_heats():
+    heats = await db.melting_heats.find().sort("start_time", -1).to_list(1000)
+    return [serialize_doc(heat) for heat in heats]
+
+@api_router.get("/melting/heat/{heat_id}")
+async def get_melting_heat(heat_id: str):
+    heat = await db.melting_heats.find_one({"_id": ObjectId(heat_id)})
+    if not heat:
+        raise HTTPException(status_code=404, detail="Heat not found")
+    return serialize_doc(heat)
+
+@api_router.put("/melting/heat/{heat_id}")
+async def update_melting_heat(heat_id: str, update: MeltingHeatUpdate):
+    update_dict = {k: v for k, v in update.dict().items() if v is not None}
+    
+    # Calculate yield if molten metal weight is provided
+    heat = await db.melting_heats.find_one({"_id": ObjectId(heat_id)})
+    if heat and update_dict.get('molten_metal_weight'):
+        charge_weight = heat.get('total_charge_weight', 1)
+        if charge_weight > 0:
+            update_dict['yield_percentage'] = round(
+                (update_dict['molten_metal_weight'] / charge_weight) * 100, 2
+            )
+    
+    result = await db.melting_heats.update_one(
+        {"_id": ObjectId(heat_id)},
+        {"$set": update_dict}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Heat not found")
+    
+    return {"message": "Heat updated successfully", "yield_percentage": update_dict.get('yield_percentage')}
+
+@api_router.delete("/melting/heat/{heat_id}")
+async def delete_melting_heat(heat_id: str):
+    result = await db.melting_heats.delete_one({"_id": ObjectId(heat_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Heat not found")
+    return {"message": "Melting heat deleted successfully"}
+
+@api_router.get("/melting/stats")
+async def get_melting_stats():
+    """Get melting statistics for dashboard"""
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    total_heats = await db.melting_heats.count_documents({})
+    today_heats = await db.melting_heats.count_documents({"start_time": {"$gte": today}})
+    active_heats = await db.melting_heats.count_documents({"status": {"$in": ["charging", "melting"]}})
+    
+    # Get average yield
+    heats_with_yield = await db.melting_heats.find(
+        {"yield_percentage": {"$exists": True, "$ne": None}}
+    ).to_list(100)
+    avg_yield = sum([h.get('yield_percentage', 0) for h in heats_with_yield]) / len(heats_with_yield) if heats_with_yield else 0
+    
+    return {
+        "total_heats": total_heats,
+        "today_heats": today_heats,
+        "active_heats": active_heats,
+        "average_yield": round(avg_yield, 2)
+    }
+
+# ===== PHASE 2: CCM (BILLET CASTING) ROUTES =====
+
+@api_router.post("/ccm/billet")
+async def create_billet_production(billet: BilletProductionCreate):
+    billet_dict = billet.dict()
+    billet_obj = BilletProduction(**billet_dict)
+    result = await db.billet_production.insert_one(billet_obj.dict())
+    
+    return {
+        "message": "Billet production recorded successfully",
+        "billet_id": str(result.inserted_id)
+    }
+
+@api_router.get("/ccm/billet")
+async def get_billet_productions():
+    billets = await db.billet_production.find().sort("start_time", -1).to_list(1000)
+    return [serialize_doc(billet) for billet in billets]
+
+@api_router.get("/ccm/billet/{billet_id}")
+async def get_billet_production(billet_id: str):
+    billet = await db.billet_production.find_one({"_id": ObjectId(billet_id)})
+    if not billet:
+        raise HTTPException(status_code=404, detail="Billet batch not found")
+    return serialize_doc(billet)
+
+@api_router.put("/ccm/billet/{billet_id}/status")
+async def update_billet_status(billet_id: str, status: str, end_time: Optional[datetime] = None):
+    update_data = {"status": status}
+    if end_time:
+        update_data["end_time"] = end_time
+    
+    result = await db.billet_production.update_one(
+        {"_id": ObjectId(billet_id)},
+        {"$set": update_data}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Billet batch not found")
+    return {"message": "Status updated successfully"}
+
+@api_router.delete("/ccm/billet/{billet_id}")
+async def delete_billet_production(billet_id: str):
+    result = await db.billet_production.delete_one({"_id": ObjectId(billet_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Billet batch not found")
+    return {"message": "Billet production record deleted successfully"}
+
+# ===== PHASE 2: ROLLING MILL ROUTES =====
+
+@api_router.post("/rolling/production")
+async def create_rolling_production(production: RollingProductionCreate):
+    production_dict = production.dict()
+    production_obj = RollingProduction(**production_dict)
+    result = await db.rolling_production.insert_one(production_obj.dict())
+    
+    return {
+        "message": "Rolling production recorded successfully",
+        "production_id": str(result.inserted_id)
+    }
+
+@api_router.get("/rolling/production")
+async def get_rolling_productions():
+    productions = await db.rolling_production.find().sort("start_time", -1).to_list(1000)
+    return [serialize_doc(production) for production in productions]
+
+@api_router.get("/rolling/production/{production_id}")
+async def get_rolling_production(production_id: str):
+    production = await db.rolling_production.find_one({"_id": ObjectId(production_id)})
+    if not production:
+        raise HTTPException(status_code=404, detail="Production record not found")
+    return serialize_doc(production)
+
+@api_router.put("/rolling/production/{production_id}/status")
+async def update_rolling_status(production_id: str, status: str, end_time: Optional[datetime] = None):
+    update_data = {"status": status}
+    if end_time:
+        update_data["end_time"] = end_time
+    
+    result = await db.rolling_production.update_one(
+        {"_id": ObjectId(production_id)},
+        {"$set": update_data}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Production record not found")
+    return {"message": "Status updated successfully"}
+
+@api_router.delete("/rolling/production/{production_id}")
+async def delete_rolling_production(production_id: str):
+    result = await db.rolling_production.delete_one({"_id": ObjectId(production_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Production record not found")
+    return {"message": "Rolling production record deleted successfully"}
+
+# ===== PHASE 2: BREAKDOWN & MAINTENANCE ROUTES =====
+
+@api_router.post("/maintenance/breakdown")
+async def create_breakdown_report(breakdown: BreakdownReportCreate):
+    breakdown_dict = breakdown.dict()
+    
+    # Generate breakdown ID
+    count = await db.breakdown_reports.count_documents({})
+    breakdown_dict['breakdown_id'] = f"BD-{datetime.utcnow().strftime('%Y%m%d')}-{count + 1:03d}"
+    
+    breakdown_obj = BreakdownReport(**breakdown_dict)
+    result = await db.breakdown_reports.insert_one(breakdown_obj.dict())
+    
+    return {
+        "message": "Breakdown reported successfully",
+        "breakdown_id": breakdown_dict['breakdown_id'],
+        "id": str(result.inserted_id)
+    }
+
+@api_router.get("/maintenance/breakdown")
+async def get_breakdown_reports():
+    breakdowns = await db.breakdown_reports.find().sort("reported_time", -1).to_list(1000)
+    return [serialize_doc(breakdown) for breakdown in breakdowns]
+
+@api_router.get("/maintenance/breakdown/{breakdown_id}")
+async def get_breakdown_report(breakdown_id: str):
+    breakdown = await db.breakdown_reports.find_one({"_id": ObjectId(breakdown_id)})
+    if not breakdown:
+        raise HTTPException(status_code=404, detail="Breakdown report not found")
+    return serialize_doc(breakdown)
+
+@api_router.put("/maintenance/breakdown/{breakdown_id}")
+async def update_breakdown_report(breakdown_id: str, update_data: dict):
+    # Calculate downtime if repair is completed
+    if update_data.get('status') == 'resolved' and update_data.get('end_repair_time'):
+        breakdown = await db.breakdown_reports.find_one({"_id": ObjectId(breakdown_id)})
+        if breakdown and breakdown.get('start_repair_time'):
+            start = breakdown['start_repair_time']
+            end = update_data['end_repair_time']
+            if isinstance(end, str):
+                end = datetime.fromisoformat(end.replace('Z', '+00:00'))
+            downtime = int((end - start).total_seconds() / 60)
+            update_data['downtime_minutes'] = downtime
+    
+    result = await db.breakdown_reports.update_one(
+        {"_id": ObjectId(breakdown_id)},
+        {"$set": update_data}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Breakdown report not found")
+    return {"message": "Breakdown report updated successfully"}
+
+@api_router.delete("/maintenance/breakdown/{breakdown_id}")
+async def delete_breakdown_report(breakdown_id: str):
+    result = await db.breakdown_reports.delete_one({"_id": ObjectId(breakdown_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Breakdown report not found")
+    return {"message": "Breakdown report deleted successfully"}
+
+@api_router.post("/maintenance/schedule")
+async def create_maintenance_schedule(schedule: MaintenanceScheduleCreate):
+    schedule_dict = schedule.dict()
+    
+    # Generate schedule ID
+    count = await db.maintenance_schedules.count_documents({})
+    schedule_dict['schedule_id'] = f"PM-{datetime.utcnow().strftime('%Y%m%d')}-{count + 1:03d}"
+    
+    schedule_obj = MaintenanceSchedule(**schedule_dict)
+    result = await db.maintenance_schedules.insert_one(schedule_obj.dict())
+    
+    return {
+        "message": "Maintenance schedule created successfully",
+        "schedule_id": schedule_dict['schedule_id'],
+        "id": str(result.inserted_id)
+    }
+
+@api_router.get("/maintenance/schedule")
+async def get_maintenance_schedules():
+    schedules = await db.maintenance_schedules.find().sort("scheduled_date", 1).to_list(1000)
+    return [serialize_doc(schedule) for schedule in schedules]
+
+@api_router.put("/maintenance/schedule/{schedule_id}/status")
+async def update_maintenance_status(schedule_id: str, status: str):
+    update_data = {"status": status}
+    if status == "completed":
+        update_data["last_maintenance"] = datetime.utcnow()
+    
+    result = await db.maintenance_schedules.update_one(
+        {"_id": ObjectId(schedule_id)},
+        {"$set": update_data}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    return {"message": "Schedule updated successfully"}
+
+@api_router.delete("/maintenance/schedule/{schedule_id}")
+async def delete_maintenance_schedule(schedule_id: str):
+    result = await db.maintenance_schedules.delete_one({"_id": ObjectId(schedule_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    return {"message": "Maintenance schedule deleted successfully"}
+
+@api_router.get("/maintenance/stats")
+async def get_maintenance_stats():
+    """Get maintenance statistics"""
+    total_breakdowns = await db.breakdown_reports.count_documents({})
+    open_breakdowns = await db.breakdown_reports.count_documents({"status": {"$in": ["reported", "assigned", "in_progress"]}})
+    critical_breakdowns = await db.breakdown_reports.count_documents({"severity": "critical", "status": {"$ne": "closed"}})
+    
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    overdue_maintenance = await db.maintenance_schedules.count_documents({
+        "scheduled_date": {"$lt": today},
+        "status": {"$ne": "completed"}
+    })
+    
+    return {
+        "total_breakdowns": total_breakdowns,
+        "open_breakdowns": open_breakdowns,
+        "critical_breakdowns": critical_breakdowns,
+        "overdue_maintenance": overdue_maintenance
+    }
+
 # ===== DASHBOARD / REPORTS =====
 
 @api_router.get("/dashboard/stats")
