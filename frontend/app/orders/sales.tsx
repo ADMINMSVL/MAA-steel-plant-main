@@ -53,7 +53,11 @@ export default function SalesOrders() {
 
   const handleCreate = async () => {
     if (!soNumber || !customer || !materialType || !quantity || !rate) {
-      Alert.alert('Error', 'Please fill all required fields');
+      if (Platform.OS === 'web') {
+        alert('Please fill all required fields');
+      } else {
+        Alert.alert('Error', 'Please fill all required fields');
+      }
       return;
     }
 
@@ -74,12 +78,20 @@ export default function SalesOrders() {
 
       if (!response.ok) throw new Error('Failed to create SO');
 
-      Alert.alert('Success', 'Sales Order created successfully');
+      if (Platform.OS === 'web') {
+        alert('Sales Order created successfully');
+      } else {
+        Alert.alert('Success', 'Sales Order created successfully');
+      }
       setShowCreateModal(false);
       resetForm();
       fetchOrders();
     } catch (error) {
-      Alert.alert('Error', 'Failed to create sales order');
+      if (Platform.OS === 'web') {
+        alert('Failed to create sales order');
+      } else {
+        Alert.alert('Error', 'Failed to create sales order');
+      }
     }
   };
 
