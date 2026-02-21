@@ -230,4 +230,42 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
+  modulesList: {
+    paddingHorizontal: 16,
+    marginBottom: 24,
+    gap: 10,
+  },
+  moduleCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    padding: 16,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  moduleIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  moduleInfo: {
+    flex: 1,
+    marginLeft: 14,
+  },
+  moduleTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#263238',
+  },
+  moduleDesc: {
+    fontSize: 13,
+    color: '#78909c',
+    marginTop: 2,
+  },
 });
