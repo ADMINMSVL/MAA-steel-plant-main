@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "steelplanterp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.steelplant.erp"
@@ -17,8 +16,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0d47a1"
       },
-      "package": "com.steelplant.erp",
-      "jsEngine": "hermes"
+      "package": "com.steelplant.erp"
     },
     "web": {
       "bundler": "metro",
