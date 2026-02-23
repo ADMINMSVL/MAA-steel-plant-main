@@ -17,7 +17,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0d47a1"
       },
-      "package": "com.steelplant.erp"
+      "package": "com.steelplant.erp",
+      "jsEngine": "hermes"
     },
     "web": {
       "bundler": "metro",
@@ -26,9 +27,6 @@
     },
     "plugins": [
       "expo-router"
-    ],
-    "experiments": {
-      "typedRoutes": true
-    }
+    ]
   }
 }
