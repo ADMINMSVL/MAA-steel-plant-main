@@ -101,6 +101,9 @@ Build a mobile application for steel plant processing that tracks materials from
 1. **Expo Tunnel Instability** - The preview environment's CI=true setting causes ngrok tunnel timeouts. This is a platform infrastructure issue, not a code issue.
 2. **Legacy User Accounts** - Users created before PIN hashing will fail to login (migration needed)
 
+## Fixed Issues (Feb 23, 2025)
+1. **Clear All Logs Button** - Fixed the admin panel "Clear All Logs" button that wasn't working. The issue was with the early return logic and double-confirmation. Now works correctly with single confirmation.
+
 ## Files Structure
 ```
 /app
