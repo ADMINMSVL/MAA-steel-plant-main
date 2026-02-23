@@ -76,85 +76,73 @@ export default function AdminScreen() {
     const totalEntries = gateEntries.length + purchaseOrders.length + salesOrders.length + 
                         weighbridgeRecords.length + qualityInspections.length;
     
-    if (totalEntries === 0) {
-      if (Platform.OS === 'web') {
-        alert('No data to clear');
-      } else {
-        Alert.alert('Info', 'No data to clear');
-      }
-      return;
-    }
+    console.log('Clear All clicked - Total entries:', totalEntries);
+    console.log('Backend URL:', BACKEND_URL);
 
+    // Call the clear API directly
+    const doClearAll = async () => {
+      try {
+        console.log('Calling clear-all API...');
+        const response = await fetch(`${BACKEND_URL}/api/admin/clear-all`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        console.log('Response status:', response.status);
+        const data = await response.json();
+        console.log('Response data:', data);
+
+        if (!response.ok) {
+          throw new Error(data.detail || 'Failed to clear data');
+        }
+        
+        const deletedCount = data.deleted?.total || 0;
+        const message = `Cleared ${deletedCount} entries successfully!\n\nGate: ${data.deleted?.gate_entries || 0}\nPO: ${data.deleted?.purchase_orders || 0}\nSO: ${data.deleted?.sales_orders || 0}\nWB: ${data.deleted?.weighbridge || 0}\nQI: ${data.deleted?.quality_inspections || 0}`;
+        
+        if (Platform.OS === 'web') {
+          alert(message);
+        } else {
+          Alert.alert('Success', message);
+        }
+        fetchAllData();
+      } catch (error: any) {
+        console.error('Clear All Error:', error);
+        const errorMsg = error.message || 'Failed to clear data';
+        if (Platform.OS === 'web') {
+          alert(`Error: ${errorMsg}`);
+        } else {
+          Alert.alert('Error', errorMsg);
+        }
+      }
+    };
+
+    // Show confirmation
     if (Platform.OS === 'web') {
       const confirmed = window.confirm(
-        `⚠️ DANGER: This will permanently delete ALL ${totalEntries} entries!\n\n` +
+        `⚠️ DANGER: This will delete ALL data!\n\n` +
         `• ${gateEntries.length} Gate Entries\n` +
         `• ${purchaseOrders.length} Purchase Orders\n` +
         `• ${salesOrders.length} Sales Orders\n` +
         `• ${weighbridgeRecords.length} Weighbridge Records\n` +
         `• ${qualityInspections.length} Quality Inspections\n\n` +
-        `This action CANNOT be undone!\n\nAre you absolutely sure?`
+        `Are you sure?`
       );
       
-      if (!confirmed) return;
-
-      const secondConfirm = window.confirm('Final confirmation: Delete ALL data?');
-      if (!secondConfirm) return;
-
-      try {
-        const response = await fetch(`${BACKEND_URL}/api/admin/clear-all`, {
-          method: 'DELETE',
-        });
-
-        if (!response.ok) throw new Error('Failed to clear data');
-        
-        alert('All data cleared successfully');
-        fetchAllData();
-      } catch (error) {
-        alert('Failed to clear data');
+      if (confirmed) {
+        await doClearAll();
       }
     } else {
       Alert.alert(
-        '⚠️ Clear All Data',
-        `This will permanently delete ALL ${totalEntries} entries!\n\n` +
-        `• ${gateEntries.length} Gate Entries\n` +
-        `• ${purchaseOrders.length} Purchase Orders\n` +
-        `• ${salesOrders.length} Sales Orders\n` +
-        `• ${weighbridgeRecords.length} Weighbridge Records\n` +
-        `• ${qualityInspections.length} Quality Inspections\n\n` +
-        `This action CANNOT be undone!`,
+        'Clear All Data',
+        `This will delete ALL ${totalEntries} entries. Are you sure?`,
         [
           { text: 'Cancel', style: 'cancel' },
           {
             text: 'Delete All',
             style: 'destructive',
-            onPress: () => {
-              Alert.alert(
-                'Final Confirmation',
-                'Are you absolutely sure? This cannot be undone!',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Yes, Delete All',
-                    style: 'destructive',
-                    onPress: async () => {
-                      try {
-                        const response = await fetch(`${BACKEND_URL}/api/admin/clear-all`, {
-                          method: 'DELETE',
-                        });
-
-                        if (!response.ok) throw new Error('Failed to clear data');
-                        
-                        Alert.alert('Success', 'All data cleared successfully');
-                        fetchAllData();
-                      } catch (error) {
-                        Alert.alert('Error', 'Failed to clear data');
-                      }
-                    },
-                  },
-                ]
-              );
-            },
+            onPress: doClearAll,
           },
         ]
       );
