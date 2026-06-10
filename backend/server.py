@@ -101,7 +101,7 @@ class Weighbridge(BaseModel):
 
 class WeighbridgeCreate(BaseModel):
     gate_entry_id: str
-    weight_image: str
+    weight_image: Optional[str] = None
     weight_1: Optional[float] = None
     weight_2: Optional[float] = None
     weight_3: Optional[float] = None
