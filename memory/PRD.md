@@ -91,14 +91,19 @@ Build a mobile application for steel plant processing that tracks materials from
 - PIN: 1234
 - Role: admin
 
-## Current Status (Feb 2025)
-- Backend: 100% Complete and Tested (28/28 tests passing)
-- Frontend: Complete, but preview environment has tunnel stability issues
+## Current Status (June 2026)
+- Backend: 100% Complete and Deployed to **Render** (https://maa-steel-plant-main.onrender.com)
+- Database: MongoDB Atlas (cloud hosted)
+- Frontend: Complete, APK built and ready for distribution
 - Phase 1 & 2: Fully implemented
 - Phase 3: Not started
 
+## Production URLs
+- **Backend API:** https://maa-steel-plant-main.onrender.com
+- **APK Download:** https://expo.dev/artifacts/eas/ikWzQSMa9b2zeVFqpe78kr.apk
+
 ## Known Issues
-1. **Expo Tunnel Instability** - The preview environment's CI=true setting causes ngrok tunnel timeouts. This is a platform infrastructure issue, not a code issue.
+1. **Render Free Tier Cold Start** - First request after 15 mins of inactivity takes ~30-50 seconds
 2. **Legacy User Accounts** - Users created before PIN hashing will fail to login (migration needed)
 
 ## Fixed Issues (Feb 23, 2025)
