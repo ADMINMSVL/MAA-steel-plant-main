@@ -86,7 +86,7 @@ class GateEntryCreate(BaseModel):
 
 class Weighbridge(BaseModel):
     gate_entry_id: str
-    weight_image: str  # base64
+    weight_image: Optional[str] = None  # base64
     extracted_weight: Optional[float] = None
     weight_1: Optional[float] = None
     weight_2: Optional[float] = None
