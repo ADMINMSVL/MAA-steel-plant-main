@@ -91,7 +91,7 @@ export default function CreateWeighbridge() {
           gross_weight: parseFloat(grossWeight),
           tare_weight: parseFloat(tareWeight),
           net_weight: parseFloat(netWeight),
-          weighing_operator_id: user?.id || '',
+          operator_id: user?.id || '',
         }),
       });
 
