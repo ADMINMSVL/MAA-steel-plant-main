@@ -85,6 +85,26 @@ async def generate_gate_entry_number():
     
     return f"{prefix}{new_seq:02d}"
 
+async def generate_quality_inspection_number():
+    """Generate Quality Inspection number in format ICYYMMDD00 with increment"""
+    today = datetime.utcnow()
+    prefix = f"IC{today.strftime('%y%m%d')}"
+    
+    # Find the latest quality inspection for today
+    latest_inspection = await db.quality_inspections.find_one(
+        {"inspection_number": {"$regex": f"^{prefix}"}},
+        sort=[("inspection_number", -1)]
+    )
+    
+    if latest_inspection:
+        # Extract the sequence number and increment
+        last_seq = int(latest_inspection['inspection_number'][-2:])
+        new_seq = last_seq + 1
+    else:
+        new_seq = 1
+    
+    return f"{prefix}{new_seq:02d}"
+
 # ===== MODELS =====
 
 class User(BaseModel):
@@ -170,6 +190,7 @@ class QualityCategory(BaseModel):
     product_name: Optional[str] = None  # For "Others" category to specify custom product
 
 class QualityInspection(BaseModel):
+    inspection_number: Optional[str] = None  # ICYYMMDD00 format
     gate_entry_id: str
     colour_tin: Optional[QualityCategory] = None
     tin: Optional[QualityCategory] = None
@@ -188,6 +209,7 @@ class QualityInspection(BaseModel):
     inspector_id: str
     inspection_date: datetime = Field(default_factory=datetime.utcnow)
     unloading_bay: Optional[str] = None
+    base_price: Optional[float] = None  # P2P base price from PO or manual
 
 class QualityInspectionCreate(BaseModel):
     gate_entry_id: str
@@ -205,6 +227,7 @@ class QualityInspectionCreate(BaseModel):
     status: str
     inspector_id: str
     unloading_bay: Optional[str] = None
+    base_price: Optional[float] = None  # P2P base price
 
 class MaterialConsumption(BaseModel):
     material_type: str
@@ -727,6 +750,22 @@ async def delete_quality_inspection(inspection_id: str):
 async def create_quality_inspection(inspection: QualityInspectionCreate):
     inspection_dict = inspection.dict()
     
+    # Generate inspection number
+    inspection_dict['inspection_number'] = await generate_quality_inspection_number()
+    
+    # Try to get base price from linked PO if not provided
+    if not inspection_dict.get('base_price'):
+        try:
+            gate_entry = await db.gate_entries.find_one({"_id": ObjectId(inspection.gate_entry_id)})
+            if gate_entry and gate_entry.get('purchase_order_id'):
+                po = await db.purchase_orders.find_one({"_id": ObjectId(gate_entry['purchase_order_id'])})
+                if po:
+                    inspection_dict['base_price'] = po.get('rate')
+            elif gate_entry and gate_entry.get('rate'):
+                inspection_dict['base_price'] = gate_entry.get('rate')
+        except Exception as e:
+            logging.warning(f"Could not fetch base price: {e}")
+    
     # Calculate total weight and amount
     total_weight = 0
     total_amount = 0
@@ -759,14 +798,47 @@ async def create_quality_inspection(inspection: QualityInspectionCreate):
     return {
         "message": "Quality inspection created successfully",
         "inspection_id": str(result.inserted_id),
+        "inspection_number": inspection_dict.get('inspection_number'),
         "total_weight": total_weight,
-        "total_amount": total_amount
+        "total_amount": total_amount,
+        "base_price": inspection_dict.get('base_price')
     }
 
 @api_router.get("/quality-inspection")
 async def get_quality_inspections():
     inspections = await db.quality_inspections.find().sort("inspection_date", -1).to_list(1000)
     return [serialize_doc(inspection) for inspection in inspections]
+
+@api_router.get("/quality-inspection/base-price/{gate_entry_id}")
+async def get_base_price_for_inspection(gate_entry_id: str):
+    """Get base price from linked PO for quality inspection"""
+    try:
+        gate_entry = await db.gate_entries.find_one({"_id": ObjectId(gate_entry_id)})
+        if not gate_entry:
+            return {"base_price": None, "source": "not_found"}
+        
+        # Try to get rate from linked PO
+        if gate_entry.get('purchase_order_id'):
+            po = await db.purchase_orders.find_one({"_id": ObjectId(gate_entry['purchase_order_id'])})
+            if po and po.get('rate'):
+                return {
+                    "base_price": po.get('rate'),
+                    "source": "purchase_order",
+                    "po_number": po.get('po_number'),
+                    "vendor": po.get('vendor')
+                }
+        
+        # Fallback to rate stored in gate entry
+        if gate_entry.get('rate'):
+            return {
+                "base_price": gate_entry.get('rate'),
+                "source": "gate_entry"
+            }
+        
+        return {"base_price": None, "source": "no_rate"}
+    except Exception as e:
+        logging.error(f"Error fetching base price: {e}")
+        return {"base_price": None, "source": "error"}
 
 @api_router.get("/quality-inspection/entry/{gate_entry_id}")
 async def get_quality_inspection_by_entry(gate_entry_id: str):
