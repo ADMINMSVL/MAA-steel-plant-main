@@ -43,6 +43,48 @@ def serialize_doc(doc):
         doc['_id'] = str(doc['_id'])
     return doc
 
+# ===== SEQUENCE GENERATOR HELPERS =====
+
+async def generate_po_number():
+    """Generate PO number in format POYYMMDD00 with increment"""
+    today = datetime.utcnow()
+    prefix = f"PO{today.strftime('%y%m%d')}"
+    
+    # Find the latest PO for today
+    latest_po = await db.purchase_orders.find_one(
+        {"po_number": {"$regex": f"^{prefix}"}},
+        sort=[("po_number", -1)]
+    )
+    
+    if latest_po:
+        # Extract the sequence number and increment
+        last_seq = int(latest_po['po_number'][-2:])
+        new_seq = last_seq + 1
+    else:
+        new_seq = 1
+    
+    return f"{prefix}{new_seq:02d}"
+
+async def generate_gate_entry_number():
+    """Generate Gate Entry number in format INYYMMDD00 with increment"""
+    today = datetime.utcnow()
+    prefix = f"IN{today.strftime('%y%m%d')}"
+    
+    # Find the latest gate entry for today
+    latest_entry = await db.gate_entries.find_one(
+        {"entry_number": {"$regex": f"^{prefix}"}},
+        sort=[("entry_number", -1)]
+    )
+    
+    if latest_entry:
+        # Extract the sequence number and increment
+        last_seq = int(latest_entry['entry_number'][-2:])
+        new_seq = last_seq + 1
+    else:
+        new_seq = 1
+    
+    return f"{prefix}{new_seq:02d}"
+
 # ===== MODELS =====
 
 class User(BaseModel):
@@ -62,11 +104,12 @@ class UserLogin(BaseModel):
     pin: str
 
 class GateEntry(BaseModel):
+    entry_number: Optional[str] = None  # INYYMMDD00 format
     vehicle_number: str
     driver_name: str
     driver_phone: str
-    material_type: str
-    supplier: str
+    material_type: Optional[str] = None
+    supplier: Optional[str] = None
     party_weight: Optional[float] = None
     purchase_order_id: Optional[str] = None
     rate: Optional[float] = None  # Rate from purchase order
@@ -78,11 +121,21 @@ class GateEntryCreate(BaseModel):
     vehicle_number: str
     driver_name: str
     driver_phone: str
-    material_type: str
-    supplier: str
+    material_type: Optional[str] = None  # Will be populated from PO
+    supplier: Optional[str] = None  # Will be populated from PO
     party_weight: Optional[float] = None
     purchase_order_id: Optional[str] = None
     operator_id: str
+
+class GateEntryUpdate(BaseModel):
+    vehicle_number: Optional[str] = None
+    driver_name: Optional[str] = None
+    driver_phone: Optional[str] = None
+    material_type: Optional[str] = None
+    supplier: Optional[str] = None
+    party_weight: Optional[float] = None
+    purchase_order_id: Optional[str] = None
+    status: Optional[str] = None
 
 class Weighbridge(BaseModel):
     gate_entry_id: str
@@ -460,11 +513,19 @@ async def get_users():
 async def create_gate_entry(entry: GateEntryCreate):
     entry_dict = entry.dict()
     
-    # If purchase order is linked, pull rate from it
+    # Generate entry number
+    entry_dict['entry_number'] = await generate_gate_entry_number()
+    
+    # If purchase order is linked, pull rate, material_type, supplier from it
     if entry_dict.get('purchase_order_id'):
-        po = await db.purchase_orders.find_one({"_id": ObjectId(entry_dict['purchase_order_id'])})
-        if po:
-            entry_dict['rate'] = po.get('rate')
+        try:
+            po = await db.purchase_orders.find_one({"_id": ObjectId(entry_dict['purchase_order_id'])})
+            if po:
+                entry_dict['rate'] = po.get('rate')
+                entry_dict['material_type'] = po.get('material_type')
+                entry_dict['supplier'] = po.get('vendor')
+        except Exception as e:
+            logging.warning(f"Could not fetch PO: {e}")
     
     # Encrypt sensitive fields before storing
     entry_dict = encrypt_document('gate_entries', entry_dict)
@@ -475,6 +536,7 @@ async def create_gate_entry(entry: GateEntryCreate):
     return {
         "message": "Gate entry created successfully",
         "entry_id": str(result.inserted_id),
+        "entry_number": entry_dict.get('entry_number'),
         "rate": entry_dict.get('rate')
     }
 
@@ -493,6 +555,35 @@ async def get_gate_entry(entry_id: str):
     return serialize_doc(entry)
 
 @api_router.put("/gate-entry/{entry_id}")
+async def update_gate_entry(entry_id: str, entry: GateEntryUpdate):
+    """Update entire gate entry (admin only)"""
+    update_dict = {k: v for k, v in entry.dict().items() if v is not None}
+    
+    # If purchase order is linked, pull rate, material_type, supplier from it
+    if update_dict.get('purchase_order_id'):
+        try:
+            po = await db.purchase_orders.find_one({"_id": ObjectId(update_dict['purchase_order_id'])})
+            if po:
+                update_dict['rate'] = po.get('rate')
+                if not update_dict.get('material_type'):
+                    update_dict['material_type'] = po.get('material_type')
+                if not update_dict.get('supplier'):
+                    update_dict['supplier'] = po.get('vendor')
+        except Exception as e:
+            logging.warning(f"Could not fetch PO: {e}")
+    
+    # Encrypt sensitive fields
+    update_dict = encrypt_document('gate_entries', update_dict)
+    
+    result = await db.gate_entries.update_one(
+        {"_id": ObjectId(entry_id)},
+        {"$set": update_dict}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return {"message": "Gate entry updated successfully"}
+
+@api_router.put("/gate-entry/{entry_id}/status")
 async def update_gate_entry_status(entry_id: str, status: str):
     result = await db.gate_entries.update_one(
         {"_id": ObjectId(entry_id)},
@@ -607,14 +698,21 @@ async def get_weighbridge_by_entry(gate_entry_id: str):
     return serialize_doc(entry)
 
 @api_router.put("/weighbridge/{weighbridge_id}")
-async def update_manual_weight(weighbridge_id: str, manual_weight: float):
+async def update_weighbridge(weighbridge_id: str, weighbridge: WeighbridgeCreate):
+    """Update entire weighbridge entry (admin only)"""
+    weighbridge_dict = weighbridge.dict()
+    
+    # Calculate net weight if gross and tare are provided
+    if weighbridge_dict.get('gross_weight') and weighbridge_dict.get('tare_weight'):
+        weighbridge_dict['net_weight'] = weighbridge_dict['gross_weight'] - weighbridge_dict['tare_weight']
+    
     result = await db.weighbridge.update_one(
         {"_id": ObjectId(weighbridge_id)},
-        {"$set": {"manual_weight": manual_weight}}
+        {"$set": weighbridge_dict}
     )
-    if result.modified_count == 0:
+    if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Entry not found")
-    return {"message": "Manual weight updated successfully"}
+    return {"message": "Weighbridge entry updated successfully", "net_weight": weighbridge_dict.get('net_weight')}
 
 # ===== QUALITY INSPECTION ROUTES =====
 
@@ -677,6 +775,38 @@ async def get_quality_inspection_by_entry(gate_entry_id: str):
         return None
     return serialize_doc(inspection)
 
+@api_router.put("/quality-inspection/{inspection_id}")
+async def update_quality_inspection(inspection_id: str, inspection: QualityInspectionCreate):
+    """Update entire quality inspection (admin only)"""
+    inspection_dict = inspection.dict()
+    
+    # Calculate total weight and amount
+    total_weight = 0
+    total_amount = 0
+    
+    categories = ['colour_tin', 'tin', 'light', 'kabadi', 'selected', 'p2p', 'mill_heavy', 'cast_iron', 'tourning', 'others']
+    for cat in categories:
+        if inspection_dict.get(cat):
+            weight = inspection_dict[cat].get('weight', 0) or 0
+            rate = inspection_dict[cat].get('rate', 0) or 0
+            total_weight += weight
+            total_amount += (weight * rate)
+    
+    inspection_dict['total_weight'] = total_weight
+    inspection_dict['total_amount'] = total_amount
+    
+    result = await db.quality_inspections.update_one(
+        {"_id": ObjectId(inspection_id)},
+        {"$set": inspection_dict}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    return {
+        "message": "Quality inspection updated successfully",
+        "total_weight": total_weight,
+        "total_amount": total_amount
+    }
+
 # ===== MATERIAL CONSUMPTION ROUTES =====
 
 @api_router.post("/material-consumption")
@@ -723,6 +853,11 @@ async def get_material_yield():
 @api_router.post("/purchase-order")
 async def create_purchase_order(order: PurchaseOrderCreate):
     order_dict = order.dict()
+    
+    # Auto-generate PO number if not provided or if it's empty
+    if not order_dict.get('po_number') or order_dict.get('po_number') == '':
+        order_dict['po_number'] = await generate_po_number()
+    
     total_amount = order_dict['quantity'] * order_dict['rate']
     order_dict['total_amount'] = total_amount
     
@@ -732,6 +867,7 @@ async def create_purchase_order(order: PurchaseOrderCreate):
     return {
         "message": "Purchase order created successfully",
         "order_id": str(result.inserted_id),
+        "po_number": order_dict['po_number'],
         "total_amount": total_amount
     }
 
@@ -740,12 +876,33 @@ async def get_purchase_orders():
     orders = await db.purchase_orders.find().sort("order_date", -1).to_list(1000)
     return [serialize_doc(order) for order in orders]
 
+@api_router.get("/purchase-order/active")
+async def get_active_purchase_orders():
+    """Get only pending/active purchase orders for linking to gate entries"""
+    orders = await db.purchase_orders.find({"status": {"$in": ["pending", "partial"]}}).sort("order_date", -1).to_list(1000)
+    return [serialize_doc(order) for order in orders]
+
 @api_router.get("/purchase-order/{order_id}")
 async def get_purchase_order(order_id: str):
     order = await db.purchase_orders.find_one({"_id": ObjectId(order_id)})
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     return serialize_doc(order)
+
+@api_router.put("/purchase-order/{order_id}")
+async def update_purchase_order(order_id: str, order: PurchaseOrderCreate):
+    """Update entire purchase order (admin only)"""
+    order_dict = order.dict()
+    total_amount = order_dict['quantity'] * order_dict['rate']
+    order_dict['total_amount'] = total_amount
+    
+    result = await db.purchase_orders.update_one(
+        {"_id": ObjectId(order_id)},
+        {"$set": order_dict}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return {"message": "Purchase order updated successfully", "total_amount": total_amount}
 
 @api_router.put("/purchase-order/{order_id}/status")
 async def update_purchase_order_status(order_id: str, status: str):
